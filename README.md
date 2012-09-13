@@ -20,4 +20,4 @@ kir
 
 *kir* is a small script that aims to preserve a fixed number of bootable kernels, dropping the old ones. 
 Its behaviour (the number of kernel images kept) can be defined by the user.
-Consider that if you use _urpme --auto-orphans_ even the kernel previously kept will be deleted keeping only the last one.
+Consider that if you use _urpme --auto-orphans_ even the kernel previously kept will be deleted keeping the last one only.
