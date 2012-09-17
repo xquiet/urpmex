@@ -17,11 +17,13 @@ use strict;
 use warnings;
 use diagnostics;
 use Term::ANSIColor qw(:constants);
+use Getopt::Long;
 #use Data::Dumper;
 
 
 my $PKG_QUERYMAKER = "urpmq";
 my $QUERYMAKER_PARAM = "--list-media";
+my $DLDER = "--wget";
 my $REPO_ADDMEDIA = "urpmi.addmedia";
 my $REPO_ADDMEDIA_PARAM_DISTRIB = "--distrib";
 my $REPO_ADDMEDIA_PARAM_MIRRORLIST = "--mirrorlist";
@@ -42,6 +44,10 @@ my $i=1;
 my $input = undef;
 my $active = undef;
 my $count = undef;
+my $use_wget = 0; # false
+
+
+my $result = GetOptions ("wget" => \$use_wget); 
 
 #------------------------ formats -----------------------------------------------
 format HEAD=
@@ -149,6 +155,7 @@ sub toggle {
 	print "Toggle $repo\n";
 	push(@args, "/usr/bin/env");
 	push(@args, $REPO_ENABLER);
+	push(@args, $DLDER) if($use_wget);
 	push(@args, $REPO_PARAM_ACTIVATE) if($status eq 0);
 	push(@args, $REPO_PARAM_DEACTIVATE) if($status eq 1);
 	push(@args, $repo);
@@ -164,6 +171,7 @@ sub update_repos {
 	my @args = ();
 	push(@args, "/usr/bin/env");
 	push(@args, $REPO_ENABLER);
+	push(@args, $DLDER) if($use_wget);
 	push(@args, '-a');
 	print "@args\n";
 	system(@args);
@@ -175,6 +183,7 @@ sub update_repo {
 	my @args = ();
 	push(@args, "/usr/bin/env");
 	push(@args, $REPO_ENABLER);
+	push(@args, $DLDER) if($use_wget);
 	push(@args, $repo);
 	print "@args\n";
 	return system(@args);
