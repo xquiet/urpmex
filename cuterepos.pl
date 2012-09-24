@@ -286,7 +286,7 @@ sub apply_changes {
 	
 	return 0 if(($flag_a == 0)&&($flag_b == 0));
 
-	confirmation($str);
+	confirmation($str,$flag_a,$flag_b);
 }
 
 # ----------------------------------------------------------------------
@@ -295,6 +295,8 @@ sub apply_changes {
 
 sub confirmation {
 		my $str = shift();
+		my $flag_a = shift();
+		my $flag_b = shift();
 		my $confirmWindow;
 		my %arguments = (
 			-border       => 1, 
@@ -331,14 +333,21 @@ sub confirmation {
 			my $label = $this->parent->getobj('lbloperations');
 			if($this->get() == -1){ #confirmed
 				$label->text("Processing...");
-				for(@TOENABLE){
-					print "toggle($_,0)\n";
-					#toggle($_,0); # status 0 --> to activate
+				if($flag_a == 1){
+					for(@TOENABLE){
+						next if(!defined($_));
+						$label->text("toggle($_,0)\n");
+						#toggle($_,0); # status 0 --> to activate
+					}
 				}
-				for(@TODISABLE){
-					print "toggle($_,1)\n";
-					#toggle($_,1); # status 1 --> to disable
+				if($flag_b == 1){
+					for(@TODISABLE){
+						next if(!defined($_));
+						$label->text("toggle($_,1)\n");
+						#toggle($_,1); # status 1 --> to disable
+					}
 				}
+				$label->text("Done!");
 			}else{
 				$w->focus;
 				$cui->delete('confirmation_window');
