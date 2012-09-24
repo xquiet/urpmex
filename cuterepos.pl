@@ -258,6 +258,7 @@ sub apply_changes {
 
 	$str = "TO ENABLE: ";
 	my $result = undef;
+	my $flag_a=0;
 	for my $repo(@sel){
 		# looking for medias that WERE NOT active 
 		# the user want to activate them right now
@@ -265,21 +266,26 @@ sub apply_changes {
 		next if(defined($result)); # it was already active, go on
 		$str = $str . $labels->{$repo}.";"; # ready to be activated
 		push(@TOENABLE, $labels->{$repo});
+		$flag_a=1;
 	}
 	
 	$str .= "\n";
 
 	$result = undef;
+	my $flag_b=0;
 	$str .= "TO DISABLE: ";
 	for my $repo(@currunsel){
 		$result = first { $_ == $repo } @inactivereposids;
 		next if(defined($result));
 		$str = $str . $labels->{$repo}.";";
 		push(@TODISABLE, $labels->{$repo});
+		$flag_b=1;
 	}
 	
 	$cui->dialog($str);
 	
+	return 0 if(($flag_a == 0)&&($flag_b == 0));
+
 	confirmation($str);
 }
 
