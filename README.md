@@ -14,6 +14,10 @@ repos
 *repos* allow the sysadmin to enable/disable/refresh all the available medias without
 having to recall their entire names.
 
+cuterepos
+---------
+
+*cuterepos* do the same job of repos but it provides an easiest user interface (thanks to ncurses)
 
 kir
 ---
