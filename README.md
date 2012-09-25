@@ -4,9 +4,10 @@ urpmex
 *urpmex* is a (small) suite of tools making Mageia system administration a bit more comfortable,
 especially when no graphical environment are available (i.e. remote terminals and so on).
 
-Currently it provides two scripts:
+Currently it provides three scripts:
 
  * repos
+ * cuterepos
  * kir
 
 repos
