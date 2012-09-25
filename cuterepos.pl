@@ -64,7 +64,8 @@ my $cui = new Curses::UI (-clear_on_exit => 1);
 # ----------------------------------------------------------------------
 
 my $file_menu = [
-    { -label => 'Quit program',       -value => sub {exit(0)}        },
+    { -label => 'Informations <Ctrl+I>',       -value => sub { about() }      },
+    { -label => 'Quit program <Ctrl+Q>',       -value => sub {exit(0)}        },
 ];
 
 my $menu = [
@@ -85,7 +86,8 @@ my $w0 = $cui->add(
 );
 $w0->add('explain', 'Label', 
   -text => "CTRL+U: refresh medias  CTRL+R: remove all medias  "
-         . "CTRL+X: menu  CTRL+Q: quit"
+         . "CTRL+X: menu  CTRL+Q: quit  CTRL+A: apply changes  "
+         . "CTRL+D: add default medias  "
 );
 
 my %args = (
@@ -130,8 +132,7 @@ for(keys %$repos){
 
 $w->add(
     undef, 'Label',
-    -text => "Below you can select the media you want to enable/disable\n"
-	   . "if the list is empty you can add the default ones pressing ^D\n"
+    -text => "Below you can select the media you want to enable/disable\n",
 );
 
 sub listbox_callback()
@@ -146,7 +147,7 @@ sub listbox_callback()
 
 my $repoList = $w->add(
     undef, 'Listbox',
-    -y          => 4,
+    -y          => 3,
     -padbottom  => 2,
     -values     => \@values,
     -labels     => $labels,
@@ -186,6 +187,9 @@ $cui->set_binding( sub { refresh_repos(); }, "\cU" );
 
 # Bind <CTRL+A> to apply changes.
 $cui->set_binding( sub { apply_changes(); }, "\cA" );
+
+# Bind <CTRL+I> to show informations of the product.
+$cui->set_binding( sub { about(); }, "\cI" );
 
 
 $w->focus;
@@ -423,4 +427,12 @@ sub enumerate_unselected_repos {
 	my @enumeratedrepos = $prevdisabledrepos->get_symmetric_difference();
 
 	return @enumeratedrepos;
+}
+
+# ----------------------------------------------------------------------
+# about box
+# ----------------------------------------------------------------------
+sub about {
+	$cui->dialog("(C) 2012 by Matteo Pasotti <matteoi\@xquiet.eu>\n".
+		     "License: GPLv3");
 }
