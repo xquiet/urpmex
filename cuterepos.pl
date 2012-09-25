@@ -49,6 +49,9 @@ my $debug = 1;
 # -------------------------------------------------
 # gui start
 # -------------------------------------------------
+# app title
+my $app_title = "Mageia Repo Manager - URPMEX Suite";
+
 # window
 my $w;
 
@@ -64,8 +67,9 @@ my $cui = new Curses::UI (-clear_on_exit => 1);
 # ----------------------------------------------------------------------
 
 my $file_menu = [
-    { -label => 'Informations <Ctrl+I>',       -value => sub { about() }      },
-    { -label => 'Quit program <Ctrl+Q>',       -value => sub {exit(0)}        },
+    { -label => 'Apply changes <Ctrl+A>', -value => sub { apply_changes() }  },
+    { -label => 'Informations <Ctrl+I>',  -value => sub { about() }          },
+    { -label => 'Quit program <Ctrl+Q>',  -value => sub {exit(0)}            },
 ];
 
 my $menu = [
@@ -101,7 +105,7 @@ my %args = (
 my $id = "main_window";
 $w = $cui->add(
 	$id, 'Window', 
-    -title => "Mageia Repo Manager - URPMEX Suite",
+    -title => $app_title,
     %args
 );
 
@@ -328,7 +332,7 @@ sub confirmation {
 		my $cid = "confirmation_window";
 		$confirmWindow = $cui->add(
 			$cid, 'Window', 
-			-title => "Mageia Repo Manager - URPMEX Suite",
+			-title => $app_title,
 			%arguments
 		);
 		
@@ -433,6 +437,6 @@ sub enumerate_unselected_repos {
 # about box
 # ----------------------------------------------------------------------
 sub about {
-	$cui->dialog("(C) 2012 by Matteo Pasotti <matteoi\@xquiet.eu>\n".
+	$cui->dialog("(C) 2012 by Matteo Pasotti <matteo.pasotti\@gmail.com>\n".
 		     "License: GPLv3");
 }
