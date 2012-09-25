@@ -239,6 +239,21 @@ sub refresh_repos {
 }
 
 # ----------------------------------------------------------------------
+# refresh single media
+# ----------------------------------------------------------------------
+sub update_repo {
+	my $repo = shift;
+	my @args = ();
+	push(@args, "/usr/bin/env");
+	push(@args, $REPO_ENABLER);
+	push(@args, $DLDER) if($use_wget);
+	push(@args, $repo);
+	print "@args\n";
+	return system(@args);
+}
+
+
+# ----------------------------------------------------------------------
 # applies all changes
 # ----------------------------------------------------------------------
 sub apply_changes {
@@ -337,17 +352,19 @@ sub confirmation {
 					for(@TOENABLE){
 						next if(!defined($_));
 						$label->text("toggle($_,0)\n");
-						#toggle($_,0); # status 0 --> to activate
+						toggle($_,0); # status 0 --> to activate
 					}
 				}
 				if($flag_b == 1){
 					for(@TODISABLE){
 						next if(!defined($_));
 						$label->text("toggle($_,1)\n");
-						#toggle($_,1); # status 1 --> to disable
+						toggle($_,1); # status 1 --> to disable
 					}
 				}
 				$label->text("Done!");
+				$w->focus;
+				$cui->delete('confirmation_window');
 			}else{
 				$w->focus;
 				$cui->delete('confirmation_window');
