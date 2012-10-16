@@ -1,5 +1,6 @@
 #!/bin/bash
 # @copyright 2012 by Matteo Pasotti <matteo.pasotti@gmail.com>
+# script inspired by yum-downloader
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
