@@ -25,25 +25,15 @@ use List::Compare;
 use List::Util qw(first);
 use Data::Dumper;
 use Getopt::Long;
+use Urpmex;
 
-#--------------------------------------------------
-# repos.pl definitions
-#--------------------------------------------------
-my $PKG_QUERYMAKER = "urpmq";
-my $QUERYMAKER_PARAM = "--list-media";
-my $DLDER = "--wget";
-my $REPO_ADDMEDIA = "urpmi.addmedia";
-my $REPO_ADDMEDIA_PARAM_DISTRIB = "--distrib";
-my $REPO_ADDMEDIA_PARAM_MIRRORLIST = "--mirrorlist";
-my $REPO_RMMEDIA = "urpmi.removemedia";
-my $REPO_RMMEDIA_ALL = "-a";
-my $REPO_ENABLER = "urpmi.update";
-my $REPO_PARAM_ACTIVATE = "--no-ignore";
-my $REPO_PARAM_DEACTIVATE = "--ignore";
 my $HFILE = undef;
 
 my @TOENABLE  = undef;
 my @TODISABLE = undef;
+
+my $flag_a = 0;
+my $flag_b = 0;
 
 #--------------------------------------------------
 
@@ -128,18 +118,18 @@ $w = $cui->add(
 # Listbox
 # ----------------------------------------------------------------------
 
-my $repos = retrieve_medias();
-my $activerepos = active_medias();
+my @values; #setup in retrieve_medias()
+my $repos = retrieve_medias_hash(\@values);
+my @activerepos = active_medias();
 
 my @activereposids = (); # active medias at start, used for "diffing"
 
-my @values; #setup in retrieve_medias()
 my $labels={};
 my $actives={};
 
 for(keys %$repos){
 	$labels->{$_} = $repos->{$_};
-	for my $item (@$activerepos){
+	for my $item (@activerepos){
 		if($labels->{$_} eq $item){
 			# http://search.cpan.org/~marcus/Curses-UI-0.95/lib/Curses/UI/Listbox.pm#WIDGET-SPECIFIC_OPTIONS
 			$actives->{$_} = 1;
@@ -202,7 +192,7 @@ $cui->set_binding( sub{ exit }, "\cQ" );
 $cui->set_binding( sub{ shift()->root->focus('menu') }, "\cX" );
 
 # Bind <CTRL+U> to refresh repos.
-$cui->set_binding( sub { refresh_repos(); }, "\cU" );
+$cui->set_binding( sub { refresh_repos(); confirmation("Repositories updated",1); }, "\cU" );
 
 # Bind <CTRL+A> to apply changes.
 $cui->set_binding( sub { apply_changes(); }, "\cA" );
@@ -214,67 +204,6 @@ $cui->set_binding( sub { about(); }, "\cI" );
 $w->focus;
 
 $cui->mainloop;
-
-# ----------------------------------------------------------------------
-# retrieve the list of all available medias
-# ----------------------------------------------------------------------
-sub retrieve_medias {
-	my $list = undef;
-	my $count = 0;
-	open(HFILE, $PKG_QUERYMAKER." ".$QUERYMAKER_PARAM."|") || die("Can't open stream\n");
-	while(<HFILE>){
-		chomp $_;
-		$list->{$count} = $_;
-		push(@values, $count);
-		$count++;
-	}
-	close(HFILE);
-	return $list;
-}
-
-# ----------------------------------------------------------------------
-# return @actives
-# ----------------------------------------------------------------------
-sub active_medias {
-	# active medias
-	my $actives = undef;
-	open(HFILE, $PKG_QUERYMAKER." ".$QUERYMAKER_PARAM." active |") || die("Can't open stream\n");
-	while(<HFILE>){
-		chomp $_;
-		push @$actives, $_;
-	}
-	close(HFILE);
-	return $actives;
-}
-
-# ----------------------------------------------------------------------
-# refresh medias
-# ----------------------------------------------------------------------
-sub refresh_repos {
-	my @args = ();
-	push(@args, "/usr/bin/env");
-	push(@args, $REPO_ENABLER);
-	push(@args, $DLDER) if($use_wget);
-	push(@args, '-a');
-	print "@args\n";
-	system(@args);
-	return 1; # makes main return value 1
-}
-
-# ----------------------------------------------------------------------
-# refresh single media
-# ----------------------------------------------------------------------
-sub update_repo {
-	my $repo = shift;
-	my @args = ();
-	push(@args, "/usr/bin/env");
-	push(@args, $REPO_ENABLER);
-	push(@args, $DLDER) if($use_wget);
-	push(@args, $repo);
-	print "@args\n";
-	return system(@args);
-}
-
 
 # ----------------------------------------------------------------------
 # applies all changes
@@ -296,7 +225,7 @@ sub apply_changes {
 
 	$str = "TO ENABLE: ";
 	my $result = undef;
-	my $flag_a=0;
+	$flag_a=0;
 	for my $repo(@sel){
 		# looking for medias that WERE NOT active 
 		# the user want to activate them right now
@@ -310,7 +239,7 @@ sub apply_changes {
 	$str .= "\n";
 
 	$result = undef;
-	my $flag_b=0;
+	$flag_b=0;
 	$str .= "TO DISABLE: ";
 	for my $repo(@currunsel){
 		$result = first { $_ == $repo } @inactivereposids;
@@ -324,7 +253,7 @@ sub apply_changes {
 	
 	return 0 if(($flag_a == 0)&&($flag_b == 0));
 
-	confirmation($str,$flag_a,$flag_b);
+	confirmation($str);
 }
 
 # ----------------------------------------------------------------------
@@ -333,8 +262,8 @@ sub apply_changes {
 
 sub confirmation {
 		my $str = shift();
-		my $flag_a = shift();
-		my $flag_b = shift();
+		my $singleButton = shift();
+		$singleButton = defined($singleButton)?$singleButton:0;
 		my $confirmWindow;
 		my %arguments = (
 			-border       => 1, 
@@ -351,10 +280,18 @@ sub confirmation {
 			%arguments
 		);
 		
+		my $confirmation_message;
+		my $op_msg;
+		if(!$singleButton){
+			$confirmation_message = "Confirm pending operations.\n\n";
+			$op_msg = "...";
+		}else{
+			$confirmation_message = "Media Refresh\n\n";
+			$op_msg = "";
+		}
 		$confirmWindow->add(
 			undef, 'Label',
-			-text => "Confirm pending operations.\n\n"
-			        .$str
+			-text => $confirmation_message.$str
 			);
 
 		$confirmWindow->add(
@@ -362,7 +299,7 @@ sub confirmation {
 			-y => 7,
 			-width => -1,
 			-bold => 1,
-			-text => "...",
+			-text => $op_msg,
 		);
 
 		sub button_callback($;)
@@ -394,45 +331,32 @@ sub confirmation {
 			}
 		}
 
+		my $buttons;
+		if(!$singleButton){
+			$buttons = [{
+					-label => "Confirm",
+					-value => -1,
+					-onpress => \&button_callback,
+					},{
+					-label => "Cancel",
+					-value => 0,
+					-onpress => \&button_callback,
+					}];
+		}else{
+			$buttons = [{
+					-label => "Ok",
+					-value => -1,
+					-onpress => \&button_callback,
+					}];
+		}
+
 		$confirmWindow->add(
 			undef, 'Buttonbox',
 			-y => 5,
-			-buttons => [
-				 {
-					-label => "Confirm",
-				-value => -1,
-				-onpress => \&button_callback,
-				},{
-					-label => "Cancel",
-				-value => 0,
-				-onpress => \&button_callback,
-				},
-			],
+			-buttons => $buttons,
 		);
 		
 		$confirmWindow->focus;
-}
-
-# ----------------------------------------------------------------------
-# toggle enable/disable repositories
-# ----------------------------------------------------------------------
-sub toggle {
-        my $repo = shift;
-        my $status = shift;
-        my @args = ();
-        print "Toggle $repo\n";
-        push(@args, "/usr/bin/env");
-        push(@args, $REPO_ENABLER);
-        push(@args, $DLDER) if($use_wget);
-        push(@args, $REPO_PARAM_ACTIVATE) if($status eq 0);
-        push(@args, $REPO_PARAM_DEACTIVATE) if($status eq 1);
-        push(@args, $repo);
-        print "E' attivo. Procedo alla disattivazione...\n" if($status eq 1);
-        print "Non e' attivo. Procedo all'attivazione...\n" if($status eq 0);
-        print "@args\n";
-        system(@args) || update_repo($repo);
-        #readline *STDIN;
-        return;
 }
 
 # ----------------------------------------------------------------------
@@ -455,3 +379,4 @@ sub about {
 	$cui->dialog("(C) 2012 by Matteo Pasotti <matteo.pasotti\@gmail.com>\n".
 		     "License: GPLv3");
 }
+
