@@ -32,5 +32,6 @@ Consider that if you use _urpme --auto-orphans_ even the kernel previously kept 
 urpm-downloader
 ---------------
 
-*urpm-downloader* is a small bash script inspired by yum-downloader. 
-It's still a prototype so it is not really usable. Avoid it ;-)
+*urpm-downloader* was inspired by yum-downloader. It can download both source and binary rpms from the repositories.
+Currently it works only with _HTTP_ repositories, ftp and rsync support is in progress.
+It's still a prototype so it may suffer of ugly bugs.
