@@ -18,20 +18,10 @@ use warnings;
 use diagnostics;
 use Term::ANSIColor qw(:constants);
 use Getopt::Long;
+use Urpmex;
 #use Data::Dumper;
 
 
-my $PKG_QUERYMAKER = "urpmq";
-my $QUERYMAKER_PARAM = "--list-media";
-my $DLDER = "--wget";
-my $REPO_ADDMEDIA = "urpmi.addmedia";
-my $REPO_ADDMEDIA_PARAM_DISTRIB = "--distrib";
-my $REPO_ADDMEDIA_PARAM_MIRRORLIST = "--mirrorlist";
-my $REPO_RMMEDIA = "urpmi.removemedia";
-my $REPO_RMMEDIA_ALL = "-a";
-my $REPO_ENABLER = "urpmi.update";
-my $REPO_PARAM_ACTIVATE = "--no-ignore";
-my $REPO_PARAM_DEACTIVATE = "--ignore";
 my $HFILE = undef;
 my @list = undef;
 my @params = undef;
@@ -77,13 +67,8 @@ sub main {
 	$item=undef;
 	$PRESENT=undef;
 
-	# all medias
-	open(HFILE, $PKG_QUERYMAKER." ".$QUERYMAKER_PARAM."|") || die("Can't open stream\n");
-	while(<HFILE>){
-		chomp $_;
-		push @list, $_;
-	}
-	close(HFILE);
+	# retrieve all medias
+	@list = retrieve_medias_array();
 	if(scalar(@list) le 0){
 		print "No available medias.\n Do I have to add all the default medias? (Y/n)\n";
 		$input=<STDIN>;
@@ -95,12 +80,7 @@ sub main {
 		}
 	}
 	# active medias
-	open(HFILE, $PKG_QUERYMAKER." ".$QUERYMAKER_PARAM." active |") || die("Can't open stream\n");
-	while(<HFILE>){
-		chomp $_;
-		push @actives, $_;
-	}
-	close(HFILE);
+	@actives = active_medias();
 	
 	select(HEAD);
 	$count=scalar(@actives);
@@ -145,71 +125,6 @@ sub main {
 	$active=1 if(grep {$_ eq $list[$input-1]} @actives);
 	$active=0 if(!grep {$_ eq $list[$input-1]} @actives);
 	toggle($list[$input-1],$active) if(exists($list[$input-1]));
-	return 1;
-}
-
-sub toggle {
-	my $repo = shift;
-	my $status = shift;
-	my @args = ();
-	print "Toggle $repo\n";
-	push(@args, "/usr/bin/env");
-	push(@args, $REPO_ENABLER);
-	push(@args, $DLDER) if($use_wget);
-	push(@args, $REPO_PARAM_ACTIVATE) if($status eq 0);
-	push(@args, $REPO_PARAM_DEACTIVATE) if($status eq 1);
-	push(@args, $repo);
-	print "E' attivo. Procedo alla disattivazione...\n" if($status eq 1);
-	print "Non e' attivo. Procedo all'attivazione...\n" if($status eq 0);
-	print "@args\n";
-	system(@args) || update_repo($repo);
-	#readline *STDIN;
-	return;
-}
-
-sub update_repos {
-	my @args = ();
-	push(@args, "/usr/bin/env");
-	push(@args, $REPO_ENABLER);
-	push(@args, $DLDER) if($use_wget);
-	push(@args, '-a');
-	print "@args\n";
-	system(@args);
-	return 1; # makes main return value 1
-}
-
-sub update_repo {
-	my $repo = shift;
-	my @args = ();
-	push(@args, "/usr/bin/env");
-	push(@args, $REPO_ENABLER);
-	push(@args, $DLDER) if($use_wget);
-	push(@args, $repo);
-	print "@args\n";
-	return system(@args);
-}
-
-sub add_medias {
-	my @args = ();
-	push(@args, "/usr/bin/env");
-	push(@args, $REPO_ADDMEDIA);
-	push(@args, $REPO_ADDMEDIA_PARAM_DISTRIB);
-	push(@args, $REPO_ADDMEDIA_PARAM_MIRRORLIST);
-	print "@args\n";
-	system(@args);
-	return 1;
-}
-
-sub remove_medias {
-	my @args = ();
-	print "Are you sure you want to remove ALL medias? Digit YES to confirm, just [Enter] to go back\n";
-	my $input = <STDIN>;
-	chomp $input;
-	return 1 if (uc($input) ne "YES");
-	push(@args, "/usr/bin/env");
-	push(@args, $REPO_RMMEDIA);
-	push(@args, $REPO_RMMEDIA_ALL);
-	system(@args);
 	return 1;
 }
 
