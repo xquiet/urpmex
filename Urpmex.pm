@@ -95,12 +95,19 @@ sub update_repos {
 # ----------------------------------------------------------------------
 sub refresh_repos {
 	my @args = ();
+	local (*OUT, *ERR);
 	push(@args, "/usr/bin/env");
 	push(@args, $REPO_ENABLER);
 	push(@args, $DLDER) if($use_wget);
 	push(@args, '-a');
 	print "@args\n";
+	open OUT, ">&STDOUT";
+	open ERR, ">&STDERR";
+	close STDOUT;
+	close STDERR;
 	system(@args);
+	open STDOUT, ">&OUT";
+	open STDERR, ">&ERR";
 	return 1; # makes main return value 1
 }
 
