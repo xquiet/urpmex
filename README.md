@@ -33,5 +33,5 @@ urpm-downloader
 ---------------
 
 *urpm-downloader* was inspired by yum-downloader. It can download both source and binary rpms from the repositories.
-Currently it works only with _HTTP_ repositories, ftp and rsync support is in progress.
+Currently it works only with _HTTP_ repositories, ftp and rsync support are in progress.
 It's still a prototype so it may suffer of ugly bugs.
