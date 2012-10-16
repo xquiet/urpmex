@@ -9,6 +9,7 @@ Currently it provides three scripts:
  * repos
  * cuterepos
  * kir
+ * urpm-downloader
 
 repos
 -----
