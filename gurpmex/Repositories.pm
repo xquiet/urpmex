@@ -28,11 +28,15 @@ use QtGui4;
 use QtCore4::debug qw( ambiguous );
 use QtCore4::isa qw( Qt::Widget );
 use QtCore4::slots
-    apply_changes => [],
+    toggle => [],
     get_last_repo_selection => ['const QModelIndex &'];
 
 my ($title);
 my $tbvRepositories;
+my $lblOperations;
+
+my $green = Qt::Color(100, 255, 100);
+my $gray  = Qt::Color(221, 221, 221);
 
 sub setupGui {
 	# ---------------------------------------
@@ -47,24 +51,30 @@ sub setupGui {
 
 	my $label = Qt::Label(this->{title});
 	this->{tbvRepositories} = Qt::TableView();
-	this->{tbvRepositories}->setShowGrid(0);
 
 	this->connect(this->{tbvRepositories},SIGNAL 'clicked()', this, SLOT 'get_last_repo_selection()');
 
+	my $commandBar = Qt::Widget();
+	my $commandBarLayout = Qt::HBoxLayout();
+	$commandBarLayout->setAlignment(Qt::AlignLeft());
 	my $btnToggle = Qt::PushButton("Toggle active/inactive");
+	this->{lblOperations} = Qt::Label();
+
+	$commandBarLayout->addWidget($btnToggle);
+	$commandBarLayout->addWidget(this->{lblOperations});
+
+	$commandBar->setLayout($commandBarLayout);
 
 	$mainLayout->addWidget($label, 0, Qt::AlignTop());
 	$mainLayout->addWidget(this->{tbvRepositories}, 0);
-	$mainLayout->addWidget($btnToggle, 0, Qt::AlignLeft()|Qt::AlignBottom());
+	#$mainLayout->addWidget($btnToggle, 0, Qt::AlignLeft()|Qt::AlignBottom());
+	$mainLayout->addWidget($commandBar, 0, Qt::AlignBottom());
 
-	this->connect($btnToggle,SIGNAL 'clicked()', this, SLOT 'apply_changes()');
+	this->connect($btnToggle,SIGNAL 'clicked()', this, SLOT 'toggle()');
 
 	this->setLayout($mainLayout);
 
 	populatePackageList();
-
-	this->{tbvRepositories}->setColumnWidth(0,20);
-	this->{tbvRepositories}->setColumnWidth(1,this->{tbvRepositories}->width()-80);
 }
 
 sub populatePackageList {
@@ -75,41 +85,64 @@ sub populatePackageList {
 	$model = this->{tbvRepositories}->model();
 	$model = Qt::StandardItemModel() if(!defined($model));
 
+	$model->clear();
+
+	$model->setColumnCount(2);
+
+	# usefull alternatives
+	# to setup column headers text
 	#$model->setHeaderData(0, Qt::Horizontal(), Qt::Variant(Qt::Object::tr("S")));
 	#$model->setHeaderData(1, Qt::Horizontal(), Qt::Variant(Qt::Object::tr("Name")));
-	$model->setHorizontalHeaderLabels(["S", "Name"]);
+	#$model->setHorizontalHeaderLabels(["S", "Repo name"]);
+	$model->setHeaderData(0, Qt::Horizontal(), Qt::Variant(Qt::String("S")));
+	$model->setHeaderData(1, Qt::Horizontal(), Qt::Variant(Qt::String("Media name")));
 
 	my @medias = retrieve_medias_array();
 	my @actives = active_medias();
 
 	$model->setRowCount(scalar(@medias));
-	$model->setColumnCount(2);
 	my $currRow = 0;
 	my $currCol = 1;
 	for my $media(@medias){
 		$currCol = 0;
 		my $bgColor;
+		my $repoStatus;
 		if(grep {$_ eq $media} @actives){
-			#$bgColor = Qt::Brush(Qt::green());
-			$bgColor = Qt::Brush(Qt::Color(100, 255, 100));
+			$bgColor = Qt::Brush($green);
+			$repoStatus = "A";
 		}else{
-			#$bgColor = Qt::Brush(Qt::gray());
-			$bgColor = Qt::Brush(Qt::Color(221, 221, 221));
+			$bgColor = Qt::Brush($gray);
+			$repoStatus = "I";
 		}
 		my $item = Qt::StandardItem();
-		$item->setBackground($bgColor);
-		$item->setText("");
+		#$item->setBackground($bgColor);
+		$item->setText($repoStatus);
 		$item->setEditable(0);
 		$model->setItem($currRow,$currCol,$item);
 		$currCol++;
 		$item = Qt::StandardItem();
-		#$item->setBackground($bgColor);
+		$item->setBackground($bgColor);
 		$item->setText($media);
 		$item->setEditable(0);
 		$model->setItem($currRow,$currCol,$item);
 		$currRow++;
 	}
 	this->{tbvRepositories}->setModel($model);
+	setupTableView();
+}
+
+sub setupTableView {
+	# adjust tableview settings
+	this->{tbvRepositories}->setShowGrid(0);
+	this->{tbvRepositories}->setSelectionMode(Qt::AbstractItemView::SingleSelection());
+	this->{tbvRepositories}->setColumnWidth(0,20);
+	#this->{tbvRepositories}->setColumnWidth(1,this->{tbvRepositories}->width()-80);
+	this->{tbvRepositories}->setColumnHidden(0,1);
+	adaptTableViewColumns();
+}
+
+sub adaptTableViewColumns {
+	this->{tbvRepositories}->setColumnWidth(1,this->{tbvRepositories}->width()-20);
 }
 
 sub showWindow {
@@ -121,8 +154,34 @@ sub get_last_repo_selection {
 	my ($modelindex) = @_;
 }
 
-sub apply_changes {
-	this->{ledtSearch}->setText("PROVA");
+sub toggle {
+	my $result;
+	my $selectionModel = this->{tbvRepositories}->selectionModel();
+	my $selection = $selectionModel->selectedIndexes();
+	this->{lblOperations}->setText("Working...");
+	Qt::Application::processEvents();
+	if($selection && ref $selection eq 'ARRAY'){
+		my $media;
+		for my $idx(@$selection){
+			$media = $idx->sibling($idx->row(), 1)->data()->toString();
+			next if($media eq "");
+			my $status = $idx->sibling($idx->row(), 0)->data()->toString();
+			print Dumper($status);
+			if($status eq "A"){
+				$result = "Disabled $media";
+				toggle_repo($media, 1);
+			}else{
+				$result = "Enabled $media";
+				toggle_repo($media, 0);
+			}
+			Qt::MessageBox::warning( this, "INFO", $result );
+			populatePackageList();
+		}
+	}else{
+		Qt::MessageBox::warning( this, "ERR", "Empty" );
+	}
+	this->{lblOperations}->setText("");
+	Qt::Application::processEvents();
 }
 
 sub resizeEvent {
@@ -130,7 +189,8 @@ sub resizeEvent {
 	this->SUPER::resizeEvent($e);
 	#my $cr = this->contentsRect();
 	#this->lineNumberArea->setGeometry(Qt::Rect($cr->left(), $cr->top(), this->lineNumberAreaWidth(), $cr->height()));
-	this->{tbvRepositories}->setColumnWidth(1,this->{tbvRepositories}->width()-80);
+	#this->{tbvRepositories}->setColumnWidth(1,this->{tbvRepositories}->width()-80);
+	adaptTableViewColumns();
 }
 
 
