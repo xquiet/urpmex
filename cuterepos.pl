@@ -287,15 +287,15 @@ sub confirmation {
 				if(@TOENABLE){
 					for(@TOENABLE){
 						next if(!defined($_));
-						$label->text("toggle($_,0)\n");
-						toggle($_,0); # status 0 --> to activate
+						$label->text("toggle_repo($_,0)\n");
+						toggle_repo($_,0); # status 0 --> to activate
 					}
 				}
 				if(@TODISABLE){
 					for(@TODISABLE){
 						next if(!defined($_));
-						$label->text("toggle($_,1)\n");
-						toggle($_,1); # status 1 --> to disable
+						$label->text("toggle_repo($_,1)\n");
+						toggle_repo($_,1); # status 1 --> to disable
 					}
 				}
 				$label->text("Done!");
