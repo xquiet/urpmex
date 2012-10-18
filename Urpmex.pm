@@ -19,7 +19,24 @@ package Urpmex;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(retrieve_medias_array retrieve_medias_hash active_medias refresh_repos update_repo toggle add_medias remove_medias update_repos);
+@EXPORT = qw(retrieve_medias_array 
+		     retrieve_medias_hash 
+		     active_medias 
+             refresh_repos 
+             update_repo 
+             toggle 
+             add_medias 
+             remove_medias 
+             update_repos
+             compute_changes
+             enumerate_unselected_repos);
+
+use strict;
+use warnings;
+use diagnostics;
+use Data::Dumper;
+use List::Compare;
+use List::Util qw(first);
 
 my $PKG_QUERYMAKER = "urpmq";
 my $QUERY_LISTMEDIA_PARM = "--list-media";
@@ -98,7 +115,7 @@ sub refresh_repos {
 	local (*OUT, *ERR);
 	push(@args, "/usr/bin/env");
 	push(@args, $REPO_ENABLER);
-	push(@args, $DLDER) if($use_wget);
+	#push(@args, $DLDER) if($use_wget);
 	push(@args, '-a');
 	print "@args\n";
 	open OUT, ">&STDOUT";
@@ -119,7 +136,7 @@ sub update_repo {
 	my @args = ();
 	push(@args, "/usr/bin/env");
 	push(@args, $REPO_ENABLER);
-	push(@args, $DLDER) if($use_wget);
+	#push(@args, $DLDER) if($use_wget);
 	push(@args, $repo);
 	print "@args\n";
 	return system(@args);
@@ -135,7 +152,7 @@ sub toggle {
         print "Toggle $repo\n";
         push(@args, "/usr/bin/env");
         push(@args, $REPO_ENABLER);
-        push(@args, $DLDER) if($use_wget);
+        #push(@args, $DLDER) if($use_wget);
         push(@args, $REPO_PARAM_ACTIVATE) if($status eq 0);
         push(@args, $REPO_PARAM_DEACTIVATE) if($status eq 1);
         push(@args, $repo);
@@ -176,5 +193,68 @@ sub remove_medias {
 	system(@args);
 	return 1;
 }
+
+# ----------------------------------------------------------------------
+# medias activation/deactivation based on previous and current selections
+# ----------------------------------------------------------------------
+sub compute_changes {
+	# current selection ref
+	my $s = shift();
+	my @currSelection = @$s;
+	# complete list of repos
+	my $r = shift();
+	my @allRepos = @$r;
+	# repository active at startup
+	my $activerepos = shift();
+	my @ids_of_active_repos = sort @$activerepos;
+	# repository inactive at startup
+	my $inactiverepos = shift();
+	my @ids_of_inactive_repos = sort @$inactiverepos;
+	# current unselected repos
+	my @currentlyUnselected = enumerate_unselected_repos(\@currSelection, \@allRepos);
+
+	my @MEDIASTOENABLE;
+	my @MEDIASTODISABLE;
+
+	@currSelection = sort @currSelection;
+
+	my $res = undef;
+	my $fA=0;
+	for my $media(@currSelection){
+		# looking for medias that WERE NOT active 
+		# the user want to activate them right now
+		$res = first { $_ == $media } @ids_of_active_repos;
+		next if(defined($res)); # it was already active, go on
+		push(@MEDIASTOENABLE, $media);
+		$fA=1;
+	}
+
+	$res = undef;
+	my $fB=0;
+	for my $media(@currentlyUnselected){
+		$res = first { $_ == $media } @ids_of_inactive_repos;
+		next if(defined($res));
+		push(@MEDIASTODISABLE, $media);
+		$fB=1;
+	}
+	
+	return (undef, undef) if(($fA == 0)&&($fB == 0));
+	return (\@MEDIASTOENABLE, \@MEDIASTODISABLE);
+}
+
+# ----------------------------------------------------------------------
+# returns an array of unselected repos from the list
+# ----------------------------------------------------------------------
+sub enumerate_unselected_repos {
+	# ottengo i repository non abilitati/non selezionati
+	my $selection = shift();
+	my $repository = shift();
+	
+	my $previouslyDisabledRepos = List::Compare->new('--unsorted',\@$selection,\@$repository);
+	my @enumerated_repos = $previouslyDisabledRepos->get_symmetric_difference();
+
+	return @enumerated_repos;
+}
+
 
 1;

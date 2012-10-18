@@ -21,8 +21,6 @@ use diagnostics;
 use FindBin;
 use lib "$FindBin::RealBin/../lib";
 use Curses::UI;
-use List::Compare;
-use List::Util qw(first);
 use Data::Dumper;
 use Getopt::Long;
 use Urpmex;
@@ -31,9 +29,6 @@ my $HFILE = undef;
 
 my @TOENABLE  = undef;
 my @TODISABLE = undef;
-
-my $flag_a = 0;
-my $flag_b = 0;
 
 #--------------------------------------------------
 
@@ -171,7 +166,9 @@ my $repoList = $w->add(
 
 # call enumerate_unselected_repos/get_unselected when listbox instance
 # is already populated (the sub rely on this)
-my @inactivereposids = enumerate_unselected_repos();
+my @tmpCurrSel = $repoList->get();
+my @tmpAllRepos = keys %$repos;
+my @inactivereposids = enumerate_unselected_repos(\@tmpCurrSel, \@tmpAllRepos);
 
 $w->add(
     'listboxlabel', 'Label',
@@ -209,54 +206,33 @@ $cui->mainloop;
 # applies all changes
 # ----------------------------------------------------------------------
 sub apply_changes {
-	# current selection
 	my @sel = $repoList->get();
-	# viene istanziato più sopra, pressi ListBox
-	# scope globale
 	my @repos = keys %$repos;
-	my @currunsel = enumerate_unselected_repos();
-
-	@sel = sort @sel;
-	# viene istanziato più sopra, pressi ListBox
-	# scope globale
-	@activereposids = sort @activereposids;
-
-	my $str = "";
-
-	$str = "TO ENABLE: ";
-	my $result = undef;
-	$flag_a=0;
-	for my $repo(@sel){
-		# looking for medias that WERE NOT active 
-		# the user want to activate them right now
-		$result = first { $_ == $repo } @activereposids;
-		next if(defined($result)); # it was already active, go on
-		$str = $str . $labels->{$repo}.";"; # ready to be activated
-		push(@TOENABLE, $labels->{$repo});
-		$flag_a=1;
+	my ($TOENABLE, $TODISABLE) = compute_changes(\@sel,\@repos,\@activereposids,\@inactivereposids);
+	
+	my $str;
+	if (defined($TOENABLE)){
+		$str = "TOENABLE (".scalar(@$TOENABLE)."): ";
+		for(@$TOENABLE){
+			$str .= $labels->{$_}."|";
+			push(@TOENABLE, $labels->{$_});
+		}
 	}
-	
-	$str .= "\n";
-
-	$result = undef;
-	$flag_b=0;
-	$str .= "TO DISABLE: ";
-	for my $repo(@currunsel){
-		$result = first { $_ == $repo } @inactivereposids;
-		next if(defined($result));
-		$str = $str . $labels->{$repo}.";";
-		push(@TODISABLE, $labels->{$repo});
-		$flag_b=1;
+	if (defined($TODISABLE)){
+		$str .= "\n\nTODISABLE (".scalar(@$TOENABLE)."): ";
+		for(@$TODISABLE){
+			$str .= $labels->{$_}."|";
+			push(@TODISABLE, $labels->{$_});
+		}
+		#$cui->dialog( $str );
+		# removing the first element (undefined)
+		shift @TOENABLE;
+		shift @TODISABLE;
+		confirmation( $str );
 	}
-	
-	$cui->dialog($str);
-	
-	return 0 if(($flag_a == 0)&&($flag_b == 0));
-
-	confirmation($str);
 }
 
-# ----------------------------------------------------------------------
+ #----------------------------------------------------------------------
 # Confirmation box
 # ----------------------------------------------------------------------
 
@@ -308,14 +284,14 @@ sub confirmation {
 			my $label = $this->parent->getobj('lbloperations');
 			if($this->get() == -1){ #confirmed
 				$label->text("Processing...");
-				if($flag_a == 1){
+				if(@TOENABLE){
 					for(@TOENABLE){
 						next if(!defined($_));
 						$label->text("toggle($_,0)\n");
 						toggle($_,0); # status 0 --> to activate
 					}
 				}
-				if($flag_b == 1){
+				if(@TODISABLE){
 					for(@TODISABLE){
 						next if(!defined($_));
 						$label->text("toggle($_,1)\n");
@@ -357,19 +333,6 @@ sub confirmation {
 		);
 		
 		$confirmWindow->focus;
-}
-
-# ----------------------------------------------------------------------
-# returns an array of unselected repos from the listbox
-# ----------------------------------------------------------------------
-sub enumerate_unselected_repos {
-	# ottengo i repository non abilitati/non selezionati
-	my @repos = keys %$repos;
-	my @sel = $repoList->get();
-	my $prevdisabledrepos = List::Compare->new('--unsorted',\@sel,\@repos);
-	my @enumeratedrepos = $prevdisabledrepos->get_symmetric_difference();
-
-	return @enumeratedrepos;
 }
 
 # ----------------------------------------------------------------------
