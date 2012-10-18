@@ -102,20 +102,6 @@ sub main {
 	}
 }
 
-sub show_help {
-	system('clear');
-	print BRIGHT_BLUE, "Digit the media correspondent number then press ",BOLD,"[Enter]",RESET,BRIGHT_BLUE," to toggle the repo active/inactive\n", RESET;
-	print "Press ", BOLD, "q", RESET, " then [Enter] to quit\n";
-	print "Press ", BOLD, "u", RESET, " then [Enter] to refresh medias\n";
-	print "Press ", BOLD, "h", RESET, " then [Enter] for this help\n";
-	print "Press ", BOLD, "amdm", RESET, " then [Enter] to add default medias\n";
-	print "Press ", BOLD, "rmall", RESET, " then [Enter] to remove all available medias\n";
-	print "Press ", BOLD, "[Enter]", RESET, " to quit this help and go back to the repositories\n";
-	print ": ";
-	<STDIN>;
-	return 1;
-}
-
 while(main() eq 1){
 }
 
