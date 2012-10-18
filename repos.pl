@@ -124,7 +124,7 @@ sub main {
 
 	$active=1 if(grep {$_ eq $list[$input-1]} @actives);
 	$active=0 if(!grep {$_ eq $list[$input-1]} @actives);
-	toggle($list[$input-1],$active) if(exists($list[$input-1]));
+	toggle_repo($list[$input-1],$active) if(exists($list[$input-1]));
 	return 1;
 }
 
