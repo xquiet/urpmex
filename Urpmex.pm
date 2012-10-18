@@ -20,11 +20,11 @@ package Urpmex;
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT = qw(retrieve_medias_array 
-		     retrieve_medias_hash 
-		     active_medias 
+	     retrieve_medias_hash 
+	     active_medias 
              refresh_repos 
              update_repo 
-             toggle 
+             toggle_repo 
              add_medias 
              remove_medias 
              update_repos
@@ -143,9 +143,11 @@ sub update_repo {
 }
 
 # ----------------------------------------------------------------------
-# toggle enable/disable repositories
+# toggle_repo enable/disable repositories
+# @param repo   string     the name of the repository
+# @param status int/bool   0 to activate, 1 to disable
 # ----------------------------------------------------------------------
-sub toggle {
+sub toggle_repo {
         my $repo = shift;
         my $status = shift;
         my @args = ();
