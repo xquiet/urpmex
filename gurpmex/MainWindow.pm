@@ -20,8 +20,7 @@ use strict;
 use warnings;
 use diagnostics;
 use Data::Dumper;
-use lib '..';
-use Urpmex;
+use Repositories;
 
 use QtCore4;
 use QtGui4;
@@ -39,54 +38,31 @@ sub setupGui {
 	# gui setup
 	# ---------------------------------------
 	this->setWindowTitle (Qt::String(this->{title}));
-	this->setGeometry(10,10,400,500);
+	this->setGeometry(10,10,600,500);
 	#this->setFixedSize(200,200);
 
 	my $mainLayout = Qt::VBoxLayout();
-	#$mainLayout->setAlignment(Qt::AlignTop());
 	$mainLayout->setContentsMargins(10,10,10,10);
-	my $optionsLayout = Qt::HBoxLayout();
 
-	my $label = Qt::Label(this->{title});
-	this->{ledtSearch} = Qt::LineEdit();
-	this->{lstviewPackages} = Qt::ListView();
-	my $btnApply = Qt::PushButton("Apply");
+	this->{tab} = Qt::TabWidget(this);
 
-	my $wdg_options = Qt::Widget();
-	my $rdbUpdates = Qt::RadioButton("Updates");
-
-	$optionsLayout->addWidget($rdbUpdates);
-
-	$wdg_options->setLayout($optionsLayout);
-
-	$mainLayout->addWidget($label, 0, Qt::AlignTop());
-	$mainLayout->addWidget(this->{ledtSearch}, 0, Qt::AlignTop());
-	$mainLayout->addWidget($wdg_options, 0, Qt::AlignTop());
-	$mainLayout->addWidget(this->{lstviewPackages}, 0, Qt::AlignTop());
-	$mainLayout->addWidget($btnApply, 0, Qt::AlignCenter());
-
-	this->connect($btnApply,SIGNAL 'clicked()', this, SLOT 'apply_changes()');
+	$mainLayout->addWidget(this->{tab}, 0);
 
 	this->setLayout($mainLayout);
 
-	populatePackageList();
+	this->{wdgRepositories} = Repositories(this->{title}." - [Repositories]");
+
+	setupTabs();
 }
 
-sub populatePackageList {
-	my $model;
-	$model = this->{lstviewPackages}->model();
-	$model = Qt::StringListModel() if(!defined($model));
-	$model->setStringList(["prova", "prova", "prova"]);
-	this->{lstviewPackages}->setModel($model);
+sub setupTabs {
+	this->{tab}->setTabPosition(Qt::TabWidget::West());
+	#this->{tab}->addTab($wdgPackages, "Packages");
+	this->{tab}->addTab(this->{wdgRepositories}, "Repositories");
 }
-
 sub showWindow {
 	this->setVisible(1);
 	this->show();
-}
-
-sub apply_changes {
-	this->{ledtSearch}->setText("PROVA");
 }
 
 sub NEW {
