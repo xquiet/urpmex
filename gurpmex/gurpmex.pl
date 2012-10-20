@@ -27,7 +27,7 @@ sub main
 	my $app = Qt::Application(\@ARGV);
 	$app->setApplicationName($title);
 	$app->setQuitOnLastWindowClosed(1);
-	my $dialog = Repositories($title);
+	my $dialog = MainWindow($title);
 	$dialog->showWindow();
 	return $app->exec();
 }
