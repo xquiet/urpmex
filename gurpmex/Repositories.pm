@@ -49,7 +49,7 @@ sub setupGui {
 	$mainLayout->setAlignment(Qt::AlignTop());
 	$mainLayout->setContentsMargins(10,10,10,10);
 
-	my $label = Qt::Label(this->{title});
+	#my $label = Qt::Label(this->{title});
 	this->{tbvRepositories} = Qt::TableView();
 
 	this->connect(this->{tbvRepositories},SIGNAL 'clicked()', this, SLOT 'get_last_repo_selection()');
@@ -65,7 +65,7 @@ sub setupGui {
 
 	$commandBar->setLayout($commandBarLayout);
 
-	$mainLayout->addWidget($label, 0, Qt::AlignTop());
+	#$mainLayout->addWidget($label, 0, Qt::AlignTop());
 	$mainLayout->addWidget(this->{tbvRepositories}, 0);
 	#$mainLayout->addWidget($btnToggle, 0, Qt::AlignLeft()|Qt::AlignBottom());
 	$mainLayout->addWidget($commandBar, 0, Qt::AlignBottom());
