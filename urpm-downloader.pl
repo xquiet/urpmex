@@ -18,6 +18,7 @@ use warnings;
 use diagnostics;
 use Term::ANSIColor qw(:constants);
 use Getopt::Long qw(:config permute);
+use Urpmex;
 #use Data::Dumper;
 
 
@@ -45,15 +46,14 @@ my $result = GetOptions ("wget" => \$use_wget,
 
 sub main {
 	my $pkg = "";
-	#my @media_urls=`urpmq --list-media active --list-url | awk -F' ' '{gsub(/x86_64|i586/,"SRPMS",\$NF); gsub(/\/media/,"",\$NF); print   \$NF}'`;
-	my @media_urls=`$PKG_QUERYMAKER $QUERY_LISTMEDIA_PARM active $QUERY_LISTURL_PARM | awk -F' ' '{print \$NF}'`;
+	my @media_urls=retrieve_active_media_urls($dl_srpm);
 	if(scalar(@pacchetti) gt 0){
 		for $pkg(@pacchetti){
 			my @lista_srpms;
 			if($dl_srpm){
-				@lista_srpms = `$PKG_QUERYMAKER $QUERY_LOOKFORSRPM_PARM $pkg | sort -u | grep "$pkg:" | awk -F':' '{print \$2}'`;
+				@lista_srpms = retrieve_srpm_pkgname($pkg);
 			}else{
-				@lista_srpms = `$PKG_QUERYMAKER -a -f $pkg | grep "^$pkg" | sort -u`;
+				@lista_srpms = retrieve_brpm_pkgname($pkg);
 			}
 			#print "@lista_srpms\n";
 			if($use_major){
@@ -72,24 +72,27 @@ sub main {
 					chomp $url;
 					my @protocol = split(':',$url);
 					if($protocol[0] eq "http"){
-						if($dl_srpm){
-							print "Fixing $url\n";
-							$url =~s/x86_64|i586/SRPMS/g;
-							$url =~s/\/media//g;
-						}
+						#print "Protocol: HTTP\n";
 						#print "Trying $url/$srpm\n";
 						my $check = `curl -s --head "$url/$srpm" | head -n 1 | grep "200 OK" > /dev/null ; echo \$?`;
 						chomp $check;
 						#print "Result: $check\n";
 						if($check eq "0"){
-							print "Found $srpm\n";
-							`curl -s $url/$srpm -o $srpm`;
+							download($url,$srpm);
 							last;
 						}
 					}elsif($protocol[0] eq "ftp"){
-	
+						#print "Protocol: FTP\n";
+						my $check = `curl -s --head "$url/$srpm"`;
+						$check =~s/\n/ /g;
+						$check =~s/^\s+//g;
+						$check =~s/\s+$//g;
+						if($check ne ""){
+							download($url,$srpm);
+							last;
+						}
 					}elsif($protocol[0] eq "rsync"){
-	
+						print "Protocol: RSYNC\n";
 					}
 					
 				}
@@ -99,6 +102,16 @@ sub main {
 	}else{
 		print "No packages passed as argument\n";
 		exit(2);
+	}
+}
+
+sub download {
+	my $url = shift();
+	my $rpm = shift();
+	if($use_wget){
+		`wget "$url/$rpm" -O $rpm`;
+	}else{
+		`curl -s "$url/$rpm" -o $rpm`;
 	}
 }
 
