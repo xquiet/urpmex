@@ -19,7 +19,10 @@ package Urpmex;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(retrieve_medias_array 
+@EXPORT = qw(retrieve_brpm_pkgname
+             retrieve_srpm_pkgname
+	     retrieve_active_media_urls
+	     retrieve_medias_array 
 	     retrieve_medias_hash 
 	     active_medias 
              refresh_repos 
@@ -52,6 +55,45 @@ my $REPO_RMMEDIA_ALL = "-a";
 my $REPO_ENABLER = "urpmi.update";
 my $REPO_PARAM_ACTIVATE = "--no-ignore";
 my $REPO_PARAM_DEACTIVATE = "--ignore";
+
+
+# ----------------------------------------------------------------------
+# retrieve the binary rpm's pkg name - array
+# ----------------------------------------------------------------------
+sub retrieve_brpm_pkgname {
+	my $pkg = shift();
+    my @lista_brpms = `$PKG_QUERYMAKER -a -f $pkg | grep "^$pkg" | sort -u`;
+    return @lista_brpms;
+}
+
+# ----------------------------------------------------------------------
+# retrieve the srpm's pkg name - array
+# ----------------------------------------------------------------------
+sub retrieve_srpm_pkgname {
+	my $pkg = shift();
+	my @lista_srpms = `$PKG_QUERYMAKER $QUERY_LOOKFORSRPM_PARM $pkg | sort -u | grep "$pkg:" | awk -F':' '{print \$2}'`;
+	return @lista_srpms;
+}
+
+# ----------------------------------------------------------------------
+# retrieve the urls of all the active medias - array
+# ----------------------------------------------------------------------
+sub retrieve_active_media_urls {
+	my $dl_srpm = shift();
+	my $awkFilter;
+	if($dl_srpm){
+		$awkFilter = "awk -F' ' '{gsub(/x86_64|i586/,\"SRPMS\",\$NF); gsub(/\\/media/,\"\",\$NF); print \$NF}'";
+	}else{
+		$awkFilter = "awk -F' ' '{print \$NF}'";
+	}
+	my @medias = `$PKG_QUERYMAKER $QUERY_LISTMEDIA_PARM active $QUERY_LISTURL_PARM | $awkFilter`;
+	#if($dl_srpm){
+	#	print "Fixing $url\n";
+	#	$url =~s/x86_64|i586/SRPMS/g;
+	#	$url =~s/\/media//g;
+	#}
+	return @medias;
+}
 
 # ----------------------------------------------------------------------
 # retrieve the list of all available medias - array
