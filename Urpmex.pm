@@ -66,6 +66,7 @@ my $REPO_PARAM_DEACTIVATE = "--ignore";
 sub retrieve_available_packages {
 	my $filter_arch = shift();
 	my @list_pkgs = `$PKG_QUERYMAKER $QUERY_LIST_AVAILABLE_PACKAGES $QUERY_PKG_GROUP $QUERY_PKG_FULL | sort -u`;
+	chomp @list_pkgs;
 	return @list_pkgs;
 }
 
