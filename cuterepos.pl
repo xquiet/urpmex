@@ -219,7 +219,7 @@ sub apply_changes {
 		}
 	}
 	if (defined($TODISABLE)){
-		$str .= "\n\nTODISABLE (".scalar(@$TOENABLE)."): ";
+		$str .= "\n\nTODISABLE (".scalar(@$TODISABLE)."): ";
 		for(@$TODISABLE){
 			$str .= $labels->{$_}."|";
 			push(@TODISABLE, $labels->{$_});
