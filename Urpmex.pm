@@ -42,9 +42,12 @@ use List::Compare;
 use List::Util qw(first);
 
 my $PKG_QUERYMAKER = "urpmq";
+my $QUERY_LIST_AVAILABLE_PACKAGES = "--list";
 my $QUERY_LISTMEDIA_PARM = "--list-media";
 my $QUERY_LISTURL_PARM = "--list-url";
 my $QUERY_LOOKFORSRPM_PARM = "--sourcerpm";
+my $QUERY_PKG_FULL = "-f";
+my $QUERY_PKG_GROUP = "-g";
 my $DLDER = "--wget";
 
 my $REPO_ADDMEDIA = "urpmi.addmedia";
@@ -58,11 +61,20 @@ my $REPO_PARAM_DEACTIVATE = "--ignore";
 
 
 # ----------------------------------------------------------------------
+# retrieve the list of the available packages - array
+# ----------------------------------------------------------------------
+sub retrieve_available_packages {
+	my $filter_arch = shift();
+	my @list_pkgs = `$PKG_QUERYMAKER $QUERY_LIST_AVAILABLE_PACKAGES $QUERY_PKG_GROUP $QUERY_PKG_FULL | sort -u`;
+	return @list_pkgs;
+}
+
+# ----------------------------------------------------------------------
 # retrieve the binary rpm's pkg name - array
 # ----------------------------------------------------------------------
 sub retrieve_brpm_pkgname {
 	my $pkg = shift();
-    my @lista_brpms = `$PKG_QUERYMAKER -a -f $pkg | grep "^$pkg" | sort -u`;
+    my @lista_brpms = `$PKG_QUERYMAKER -a $QUERY_PKG_FULL $pkg | grep "^$pkg" | sort -u`;
     return @lista_brpms;
 }
 
