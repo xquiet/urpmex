@@ -19,7 +19,7 @@ use warnings;
 use diagnostics;
 
 use FindBin;
-use lib "$FindBin::RealBin/../lib";
+use lib "$FindBin::RealBin";
 use Curses::UI;
 use Data::Dumper;
 use Getopt::Long;
