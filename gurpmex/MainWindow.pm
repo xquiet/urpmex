@@ -21,6 +21,7 @@ use warnings;
 use diagnostics;
 use Data::Dumper;
 use Repositories;
+use PackageManager;
 
 use QtCore4;
 use QtGui4;
@@ -51,13 +52,14 @@ sub setupGui {
 	this->setLayout($mainLayout);
 
 	this->{wdgRepositories} = Repositories(this->{title}." - [Repositories]");
+	this->{wdgPackageManager} = PackageManager(this->{title}." - [Package Manager]");
 
 	setupTabs();
 }
 
 sub setupTabs {
 	this->{tab}->setTabPosition(Qt::TabWidget::West());
-	#this->{tab}->addTab($wdgPackages, "Packages");
+	this->{tab}->addTab(this->{wdgPackageManager}, "Packages");
 	this->{tab}->addTab(this->{wdgRepositories}, "Repositories");
 }
 sub showWindow {
