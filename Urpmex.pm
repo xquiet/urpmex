@@ -18,8 +18,15 @@
 package Urpmex;
 
 require Exporter;
-@ISA = qw(Exporter);
-@EXPORT = qw(retrieve_brpm_pkgname
+use base qw(Exporter);
+use strict;
+use warnings;
+use diagnostics;
+use Data::Dumper;
+use List::Compare;
+use List::Util qw(first);
+
+our @EXPORT = qw(retrieve_brpm_pkgname
              retrieve_srpm_pkgname
 	     retrieve_active_media_urls
 	     retrieve_medias_array 
@@ -33,13 +40,6 @@ require Exporter;
              update_repos
              compute_changes
              enumerate_unselected_repos);
-
-use strict;
-use warnings;
-use diagnostics;
-use Data::Dumper;
-use List::Compare;
-use List::Util qw(first);
 
 my $PKG_QUERYMAKER = "urpmq";
 my $QUERY_LIST_AVAILABLE_PACKAGES = "--list";
