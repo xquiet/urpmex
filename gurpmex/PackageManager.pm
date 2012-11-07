@@ -105,6 +105,7 @@ sub setupTable {
 	$model->setHeaderData(0, Qt::Horizontal(), Qt::Variant(Qt::String("S")));
 	$model->setHeaderData(1, Qt::Horizontal(), Qt::Variant(Qt::String("Group")));
 	$model->setHeaderData(2, Qt::Horizontal(), Qt::Variant(Qt::String("Package")));
+	this->{tbvPackageList}->setEditTriggers(Qt::AbstractItemView::NoEditTriggers());
 	this->{tbvPackageList}->verticalHeader()->hide();
 	this->{tbvPackageList}->setColumnWidth(0,20);
 	this->{tbvPackageList}->setColumnWidth(1,110);
