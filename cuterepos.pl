@@ -164,11 +164,11 @@ my $repoList = $w->add(
     -onchange   => \&listbox_callback,
 );
 
-# call enumerate_unselected_repos/get_unselected when listbox instance
+# call enumerate_symm_diff/get_unselected when listbox instance
 # is already populated (the sub rely on this)
 my @tmpCurrSel = $repoList->get();
 my @tmpAllRepos = keys %$repos;
-my @inactivereposids = enumerate_unselected_repos(\@tmpCurrSel, \@tmpAllRepos);
+my @inactivereposids = enumerate_symm_diff(\@tmpCurrSel, \@tmpAllRepos);
 
 $w->add(
     'listboxlabel', 'Label',
