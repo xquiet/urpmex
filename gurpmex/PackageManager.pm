@@ -118,7 +118,7 @@ sub search_package {
 	my $model = this->{tbvPackageList}->model();
 
 	if(this->{rdbAvailable}->isChecked()){
-		my @list_pkgs = Urpmex::retrieve_available_packages();
+		my @list_pkgs = retrieve_available_packages_release($WITH_GROUP);
 		my $filter = this->{lnedtSearch}->text();
 		my @found = grep { $_ =~ /${filter}/ } @list_pkgs;
 		$model->setRowCount(scalar(@found));
@@ -134,7 +134,7 @@ sub search_package {
 			$col = 0;
 		}
 	}elsif(this->{rdbUpdates}->isChecked()){
-
+		my @list_updates = retrieve_available_updates($WITH_GROUP);
 	}else{
 		Qt::MessageBox::warning(this,"Warning", "No options selected") ;
 	}
