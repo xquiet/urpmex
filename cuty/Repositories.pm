@@ -21,7 +21,7 @@ use warnings;
 use diagnostics;
 use Data::Dumper;
 use lib '..';
-use Urpmex;
+use urpmex::Urpmex;
 
 use QtCore4;
 use QtGui4;

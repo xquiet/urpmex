@@ -15,7 +15,7 @@
 # Copyright: 2012 by Matteo Pasotti <matteo.pasotti@gmail.com>
 
 
-package Urpmex;
+package urpmex::Urpmex;
 
 require Exporter;
 use base qw(Exporter);

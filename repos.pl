@@ -18,7 +18,7 @@ use warnings;
 use diagnostics;
 use Term::ANSIColor qw(:constants);
 use Getopt::Long;
-use Urpmex;
+use urpmex::Urpmex;
 #use Data::Dumper;
 
 
