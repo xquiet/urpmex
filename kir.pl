@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright: 2012 by Matteo Pasotti <matteo.pasotti@gmail.com>
+# Copyright: 2012-2013 by Matteo Pasotti <matteo.pasotti@gmail.com>
 use strict;
 use warnings;
 use diagnostics;
