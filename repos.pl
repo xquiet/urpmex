@@ -19,7 +19,6 @@ use diagnostics;
 use Term::ANSIColor qw(:constants);
 use Getopt::Long;
 use urpmex::Urpmex;
-#use Data::Dumper;
 
 
 my $HFILE = undef;

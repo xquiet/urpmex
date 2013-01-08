@@ -19,7 +19,6 @@ use diagnostics;
 use Term::ANSIColor qw(:constants);
 use Getopt::Long qw(:config permute);
 use urpmex::Urpmex;
-#use Data::Dumper;
 
 
 my $PKG_QUERYMAKER = "urpmq";

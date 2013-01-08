@@ -19,7 +19,6 @@ use warnings;
 use diagnostics;
 
 use Curses::UI;
-use Data::Dumper;
 use Getopt::Long;
 use urpmex::Urpmex;
 

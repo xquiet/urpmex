@@ -22,7 +22,6 @@ use base qw(Exporter);
 use strict;
 use warnings;
 use diagnostics;
-use Data::Dumper;
 use List::Compare;
 use List::Util qw(first);
 

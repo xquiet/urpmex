@@ -18,7 +18,6 @@ use warnings;
 use diagnostics;
 
 use Getopt::Long;
-#use Data::Dumper;
 my $PKG_REMOVER="/usr/sbin/urpme";
 my $KRNLTOKEEP=3;
 my $force=0;
