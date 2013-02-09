@@ -34,9 +34,88 @@ my $input = undef;
 my $active = undef;
 my $count = undef;
 my $use_wget = 0; # false
+# params used speed mode
+my $e_repolist = undef;
+my $d_repolist = undef;
+my $repolist = undef;
+my $useBackports = undef;
+my $useTesting = undef;
+my $useDebug = undef;
 
+my $result = GetOptions ("wget" => \$use_wget,
+			 "enable=s" => \$e_repolist,
+			 "disable=s" => \$d_repolist,
+	 		 "backports!" => \$useBackports,
+	 		 "testing!" => \$useTesting,
+	 		 "debug!" => \$useDebug); 
 
-my $result = GetOptions ("wget" => \$use_wget); 
+die("You cannot specify --enable and --disable at the same time\n") if grep($_, $e_repolist, $d_repolist) > 1;
+
+my $toggleValue = undef; # contains the value for toggle_repo routine, see doc header
+if(defined($e_repolist)){
+	$repolist = $e_repolist;
+	$toggleValue = 0;
+}elsif(defined($d_repolist)){
+	$repolist = $d_repolist;
+	$toggleValue = 1;
+}
+
+if(defined($repolist)){
+	chomp $repolist;
+	my $filter = "Updates|Release";
+	if($useBackports){
+		$filter .= "|Backports";
+	}
+	if($useTesting){
+		$filter .= "|Updates Testing|Release Testing";
+		if($useBackports){
+			$filter .= "|Backports Testing";
+		}
+	}
+	if($useDebug){
+		$filter .= "|Updates Debug|Release Debug";
+		if($useTesting){
+			$filter .= "|Updates Testing Debug|Release Testing Debug";
+		}
+		if($useBackports){
+			$filter .= "|Backports Debug";
+			if($useTesting){
+				$filter .= "|Backports Testing Debug";
+			}
+		}
+	}
+
+	my @choices = split(',',$repolist);
+	my @repolist = retrieve_medias_array();
+	my @selected_medias = ();
+	if(check_no_medias(@repolist)){
+		die("No medias found");
+	}
+	# rte = repo to enable
+	for my $media(@repolist){
+		$media = urpmex::Shared::trim($media);
+		if($media eq ""){
+			print "An empty media found?!\n";
+		}
+		for my $rte(@choices){
+			$rte = ucfirst($rte);
+			if($media =~ /^${rte}\s+($filter)$/g){
+				push @selected_medias, $media;
+			}
+		}
+	}
+
+	my @active_medias = active_medias();
+	my @medias = ();
+	@medias = find_medias_to_enable(\@selected_medias, \@active_medias) if($toggleValue == 0);
+	@medias = r_strip_occurrences(\@selected_medias, \@active_medias) if($toggleValue == 1);
+	for(@medias){
+		print "Enabling repo $_ ...\n" if($toggleValue == 0);
+		print "Disabling repo $_ ...\n" if($toggleValue == 1);
+		toggle_repo($_,$toggleValue);
+	}
+	exit(0);
+}
 
 #------------------------ formats -----------------------------------------------
 format HEAD=
@@ -68,15 +147,8 @@ sub main {
 
 	# retrieve all medias
 	@list = retrieve_medias_array();
-	if(scalar(@list) le 0){
-		print "No available medias.\n Do I have to add all the default medias? (Y/n)\n";
-		$input=<STDIN>;
-		chomp $input;
-		if (lc($input) eq "y"){
-			return add_medias();
-		}else{
-			return 0;
-		}
+	if(check_no_medias(@list)){
+		die("No medias found");
 	}
 	# active medias
 	@actives = active_medias();
@@ -125,6 +197,24 @@ sub main {
 	$active=0 if(!grep {$_ eq $list[$input-1]} @actives);
 	toggle_repo($list[$input-1],$active) if(exists($list[$input-1]));
 	return 1;
+}
+
+# ----------------------------------------------------------------------
+# check if there's no media and ask the user to add them eventually
+# ----------------------------------------------------------------------
+sub check_no_medias {
+	my @list = @_;
+	my $input;
+	if(scalar(@list) le 0){
+		print "No available medias.\n Do I have to add all the default medias? (Y/n)\n";
+		$input=<STDIN>;
+		chomp $input;
+		if (lc($input) eq "y"){
+			return add_medias();
+		}else{
+			return 0;
+		}
+	}
 }
 
 sub show_help {
