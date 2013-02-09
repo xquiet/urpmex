@@ -24,6 +24,9 @@ use warnings;
 use diagnostics;
 use List::Compare;
 use List::Util qw(first);
+use urpmex::Shared;
+use urpmex::RPM;
+use POSIX;
 
 our @EXPORT = qw(retrieve_available_updates
              retrieve_available_packages_full
@@ -40,64 +43,81 @@ our @EXPORT = qw(retrieve_available_updates
              add_medias 
              remove_medias 
              update_repos
+	     find_medias_to_enable
+	     find_medias_to_disable
+	     r_strip_occurrences
              compute_changes
              enumerate_symm_diff
-	     $WITH_GROUP
-	     $WITHOUT_GROUP
-	     $UPDATES_ONLY
      	     );
 
-my $PKG_QUERYMAKER = "urpmq";
-my $RPM_COMMAND = "rpm";
-my $RPM_QUERY = "-q";
-my $RPM_QUERY_ALL = "-a";
-my $RPM_QUERY_FMT = "--qf";
-my $QUERY_LIST_AVAILABLE_PACKAGES = "--list";
-my $QUERY_LISTMEDIA_PARM = "--list-media";
-my $QUERY_LISTURL_PARM = "--list-url";
-my $QUERY_LIST_UPDATES_ONLY = "--update";
-my $QUERY_LOOKFORSRPM_PARM = "--sourcerpm";
-my $QUERY_PKG_FULL = "-f";
-my $QUERY_PKG_RELEASE = "-r";
-my $QUERY_PKG_GROUP = "-g";
-my $DLDER = "--wget";
+# ----------------------------------------------------------------------
+# compare two package names and return true if 2nd arg is newer than 1st
+# otherwise return false - bool
+# ----------------------------------------------------------------------
+sub newer {
+	my $installed = shift();
+	my $possible = shift();
+	# return 0 before comparing_packages if package names are identical
+	my $result = compare_packages($installed,$possible);
+	return 0 if($result == 1);
+	return 1 if($result == -1);
+}
 
-my $REPO_ADDMEDIA = "urpmi.addmedia";
-my $REPO_ADDMEDIA_PARAM_DISTRIB = "--distrib";
-my $REPO_ADDMEDIA_PARAM_MIRRORLIST = "--mirrorlist";
-my $REPO_RMMEDIA = "urpmi.removemedia";
-my $REPO_RMMEDIA_ALL = "-a";
-my $REPO_ENABLER = "urpmi.update";
-my $REPO_PARAM_ACTIVATE = "--no-ignore";
-my $REPO_PARAM_DEACTIVATE = "--ignore";
-
-# constants
-our $WITH_GROUP = 1;
-our $WITHOUT_GROUP = 0;
-our $UPDATES_ONLY = 1;
-our $RPM_QUERY_NAMEONLY = 1;
+# ----------------------------------------------------------------------
+# compare installed pkgs with available pkgs to find updates - array
+# ----------------------------------------------------------------------
+sub check_for_updates {
+	my $possibleUpdates = shift();
+	my $installedPkgs = shift();
+	my @update_candidate = ();
+	for my $installed (@$installedPkgs){
+		my $i_name = rpm_name($installed, 1);
+		print "RESTANTI: ".scalar(@$possibleUpdates)."\n";
+		last if(scalar(@$possibleUpdates)<=0);
+		my @matching = grep { $_ =~ /${i_name}/ } @$possibleUpdates;
+		next if(scalar(@matching)<=0);
+		my $possible = first { rpm_name($_,0) eq $i_name } @matching; 
+		#if(!defined($possible) || ($possible eq "")){
+		#	for(@matching){
+		#		splice(@$possibleUpdates, indexArray($_,@$possibleUpdates), 1);
+		#	}
+		#	next;
+		#}
+		next if(!defined($possible) || ($possible eq ""));
+		splice(@$possibleUpdates, indexArray($possible,@$possibleUpdates), 1);
+		my $p_name = rpm_name($possible,0);
+		next if($p_name eq "");
+		if(newer($i_name,$p_name)){
+			print ">>> PUSHED <<<\n";
+			print "$possible\n";
+			push @update_candidate, $possible;
+		}
+	}
+	return @update_candidate;
+}
 
 # ----------------------------------------------------------------------
 # find available updates - array
 # ----------------------------------------------------------------------
 sub retrieve_available_updates {
+	use Data::Dumper;
+	my @available_updates = retrieve_available_packages_release($WITHOUT_GROUP,$UPDATES_ONLY);
 	my @installed = retrieve_installed_packages($RPM_QUERY_NAMEONLY);
-	my @availables = retrieve_available_packages_release($WITHOUT_GROUP,$UPDATES_ONLY);
-	my @intermediate = enumerate_symm_diff(\@installed, \@availables);
-	print "INTERMEDIATE\n";
-	print Dumper(@intermediate);
-	print "INSTALLED\n";
-	print Dumper(@installed);
-	my @updates = enumerate_intersection(\@installed, \@intermediate);
+	#my @intermediate = enumerate_similar_items(\@installed, \@available_updates);
+	#my @installed_full = retrieve_installed_packages($RPM_QUERY_NAME_VERSION_RELEASE);
+	my @updates = check_for_updates(\@available_updates, \@installed);
+	print Dumper(@updates);
 	return @updates;
 }
 
 sub wrap_retrieve_installed_packages {
-	my $nameonly = shift();
+	my $filter = shift();
 	my @args;
 	my $command = "$RPM_COMMAND $RPM_QUERY $RPM_QUERY_ALL";
-	if(defined($nameonly) && ($nameonly == $RPM_QUERY_NAMEONLY)){
+	if(defined($filter) && ($filter == $RPM_QUERY_NAMEONLY)){
 		push @args, "$RPM_QUERY_FMT \"%{NAME}\n\"";
+	}elsif(defined($filter) && ($filter == $RPM_QUERY_NAME_VERSION_RELEASE)){
+		push @args, "$RPM_QUERY_FMT \"%{NAME}-%{VERSION}-%{RELEASE}\n\"";
 	}
 	$command = $command . " " . join(" ", @args);
 	return $command;
@@ -107,8 +127,8 @@ sub wrap_retrieve_installed_packages {
 # retrieve installed packages - array
 # ----------------------------------------------------------------------
 sub retrieve_installed_packages {
-	my $nameonly = shift();
-	my $command = wrap_retrieve_installed_packages($nameonly);
+	my $filter = shift();
+	my $command = wrap_retrieve_installed_packages($filter);
 	my @list = `$command`;
 	chomp @list;
 	return @list;
@@ -351,6 +371,63 @@ sub remove_medias {
 }
 
 # ----------------------------------------------------------------------
+# reverse of strip_occurrences (a available from b)
+# ----------------------------------------------------------------------
+sub r_strip_occurrences {
+	my $a = shift();
+	my $b = shift();
+	my @medias = ();
+	for my $media(@$b){
+		my $res = undef;
+		if(isdigit($media)){
+			$res = first { $_ == $media } @$a;
+		}else{
+			$res = first { $_ eq $media } @$a;
+		}
+		push(@medias, $media) if(defined($res));
+	}
+	return @medias;
+}
+
+# ----------------------------------------------------------------------
+# return an array of the occurrences of a not available from b
+# ----------------------------------------------------------------------
+sub strip_occurrences {
+	my $a = shift();
+	my $b = shift();
+	my @medias = ();
+	for my $media(@$a){
+		my $res = undef;
+		if(isdigit($media)){
+			$res = first { $_ == $media } @$b;
+		}else{
+			$res = first { $_ eq $media } @$b;
+		}
+		next if(defined($res));
+		push(@medias, $media);
+	}
+	return @medias;
+}
+
+# ----------------------------------------------------------------------
+# find medias to disable from a mixed list
+# ----------------------------------------------------------------------
+sub find_medias_to_disable {
+	my $unselected = shift();
+	my $inactive = shift();
+	return strip_occurrences(\@$unselected,\@$inactive);
+}
+
+# ----------------------------------------------------------------------
+# find medias to enable from a mixed list
+# ----------------------------------------------------------------------
+sub find_medias_to_enable {
+	my $selection = shift();
+	my $active = shift();
+	return strip_occurrences(\@$selection,\@$active);
+}
+
+# ----------------------------------------------------------------------
 # medias activation/deactivation based on previous and current selections
 # ----------------------------------------------------------------------
 sub compute_changes {
@@ -376,23 +453,13 @@ sub compute_changes {
 
 	my $res = undef;
 	my $fA=0;
-	for my $media(@currSelection){
-		# looking for medias that WERE NOT active 
-		# the user want to activate them right now
-		$res = first { $_ == $media } @ids_of_active_repos;
-		next if(defined($res)); # it was already active, go on
-		push(@MEDIASTOENABLE, $media);
-		$fA=1;
-	}
+	@MEDIASTOENABLE = find_medias_to_enable(\@currSelection,\@ids_of_active_repos);
+	$fA=1 if(scalar(@MEDIASTOENABLE) > 0);
 
 	$res = undef;
 	my $fB=0;
-	for my $media(@currentlyUnselected){
-		$res = first { $_ == $media } @ids_of_inactive_repos;
-		next if(defined($res));
-		push(@MEDIASTODISABLE, $media);
-		$fB=1;
-	}
+	@MEDIASTODISABLE = find_medias_to_disable(\@currentlyUnselected, \@ids_of_inactive_repos);
+	$fB=1 if(scalar(@MEDIASTODISABLE) > 0);
 	
 	return (undef, undef) if(($fA == 0)&&($fB == 0));
 	return (\@MEDIASTOENABLE, \@MEDIASTODISABLE);
@@ -429,14 +496,32 @@ sub enumerate_union {
 sub enumerate_intersection {
 	my $first_set = shift();
 	my $second_set = shift();
-=comment
 	my $intersection = List::Compare->new('--unsorted',\@$first_set,\@$second_set);
 	my @enumeration = $intersection->get_intersection();
-=cut
+	return @enumeration;
+}
+
+# ----------------------------------------------------------------------
+# returns a list of item matching the given regex - array
+# ----------------------------------------------------------------------
+sub enumerate_similar_items {
+	my $first_set = shift();
+	my $second_set = shift();
 	my @enumeration;
 	for my $pattern(@$first_set){
-		push @enumeration, grep { $_ =~ /${pattern}\-/g } @$second_set;
+		push @enumeration, grep { $_ =~ /${pattern}/g } @$second_set;
 	}
+	return @enumeration;
+}
+
+# ----------------------------------------------------------------------
+# returns the intersection of two lists - array
+# ----------------------------------------------------------------------
+sub enumerate_complement {
+	my $first_list = shift();
+	my $second_list = shift();
+	my $complement = List::Compare->new('--unsorted',\@$first_list,\@$second_list);
+	my @enumeration = $complement->get_complement();
 	return @enumeration;
 }
 
