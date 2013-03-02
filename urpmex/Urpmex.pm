@@ -72,7 +72,7 @@ sub check_for_updates {
 	my @update_candidate = ();
 	for my $installed (@$installedPkgs){
 		my $i_name = rpm_name($installed, 1);
-		print "RESTANTI: ".scalar(@$possibleUpdates)."\n";
+		print "Remaining: ".scalar(@$possibleUpdates)."\n";
 		last if(scalar(@$possibleUpdates)<=0);
 		my @matching = grep { $_ =~ /${i_name}/ } @$possibleUpdates;
 		next if(scalar(@matching)<=0);
@@ -332,8 +332,8 @@ sub toggle_repo {
         push(@args, $REPO_PARAM_ACTIVATE) if($status eq 0);
         push(@args, $REPO_PARAM_DEACTIVATE) if($status eq 1);
         push(@args, $repo);
-        print "E' attivo. Procedo alla disattivazione...\n" if($status eq 1);
-        print "Non e' attivo. Procedo all'attivazione...\n" if($status eq 0);
+        print "Already active. Deactivating...\n" if($status eq 1);
+        print "Not active. Activating...\n" if($status eq 0);
         print "@args\n";
         system(@args) || update_repo($repo);
         #readline *STDIN;
@@ -359,7 +359,7 @@ sub add_medias {
 # ----------------------------------------------------------------------
 sub remove_medias {
 	my @args = ();
-	print "Are you sure you want to remove ALL medias? Digit YES to confirm, just [Enter] to go back\n";
+	print "Are you sure you want to remove ALL media? Digit YES to confirm, just [Enter] to go back\n";
 	my $input = <STDIN>;
 	chomp $input;
 	return 1 if (uc($input) ne "YES");
