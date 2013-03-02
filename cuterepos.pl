@@ -209,14 +209,14 @@ sub apply_changes {
 	
 	my $str;
 	if (defined($TOENABLE)){
-		$str = "TOENABLE (".scalar(@$TOENABLE)."): ";
+		$str = "Media to activate (".scalar(@$TOENABLE)."): ";
 		for(@$TOENABLE){
 			$str .= $labels->{$_}."|";
 			push(@TOENABLE, $labels->{$_});
 		}
 	}
 	if (defined($TODISABLE)){
-		$str .= "\n\nTODISABLE (".scalar(@$TODISABLE)."): ";
+		$str .= "\n\nMedia to deactivate (".scalar(@$TODISABLE)."): ";
 		for(@$TODISABLE){
 			$str .= $labels->{$_}."|";
 			push(@TODISABLE, $labels->{$_});
@@ -336,7 +336,7 @@ sub confirmation {
 # about box
 # ----------------------------------------------------------------------
 sub about {
-	$cui->dialog("(C) 2012 by Matteo Pasotti <matteo.pasotti\@gmail.com>\n".
+	$cui->dialog("(C) 2013 by Matteo Pasotti <matteo.pasotti\@gmail.com>\n".
 		     "License: GPLv3");
 }
 
