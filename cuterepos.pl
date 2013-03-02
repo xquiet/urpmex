@@ -280,19 +280,19 @@ sub confirmation {
 			my $this = shift;
 			my $label = $this->parent->getobj('lbloperations');
 			if($this->get() == -1){ #confirmed
-				$label->text("Processing...");
+				$label->text("Processing, wait please...");
 				if(@TOENABLE){
 					for(@TOENABLE){
 						next if(!defined($_));
 						$label->text("toggle_repo($_,0)\n");
-						toggle_repo($_,0); # status 0 --> to activate
+						toggle_repo($_,0,0); # status 0 --> to activate
 					}
 				}
 				if(@TODISABLE){
 					for(@TODISABLE){
 						next if(!defined($_));
 						$label->text("toggle_repo($_,1)\n");
-						toggle_repo($_,1); # status 1 --> to disable
+						toggle_repo($_,1,0); # status 1 --> to disable
 					}
 				}
 				$label->text("Done!");
