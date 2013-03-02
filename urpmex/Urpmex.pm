@@ -27,6 +27,7 @@ use List::Util qw(first);
 use urpmex::Shared;
 use urpmex::RPM;
 use POSIX;
+use Capture::Tiny ':all';
 
 our @EXPORT = qw(retrieve_available_updates
              retrieve_available_packages_full
@@ -324,19 +325,26 @@ sub update_repo {
 sub toggle_repo {
         my $repo = shift;
         my $status = shift;
+	my $doOutput = shift;
         my @args = ();
-        print "Toggle $repo\n";
+	$doOutput = 1 if(!defined($doOutput));
+        print "Toggle $repo\n" if($doOutput);
         push(@args, "/usr/bin/env");
         push(@args, $REPO_ENABLER);
         #push(@args, $DLDER) if($use_wget);
         push(@args, $REPO_PARAM_ACTIVATE) if($status eq 0);
         push(@args, $REPO_PARAM_DEACTIVATE) if($status eq 1);
         push(@args, $repo);
-        print "Already active. Deactivating...\n" if($status eq 1);
-        print "Not active. Activating...\n" if($status eq 0);
-        print "@args\n";
-        system(@args) || update_repo($repo);
-        #readline *STDIN;
+        print "Already active. Deactivating...\n" if(($status eq 1)&&($doOutput));
+        print "Not active. Activating...\n" if(($status eq 0)&&($doOutput));
+        print "@args\n" if($doOutput);
+	if($doOutput){
+		system(@args) || update_repo($repo);
+	}else{
+		my ($stdout, $stderr, $exit) = capture {
+        		system(@args) || update_repo($repo);
+		};
+	}
         return;
 }
 
