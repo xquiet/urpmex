@@ -20,6 +20,8 @@ use Term::ANSIColor qw(:constants);
 use Getopt::Long;
 use urpmex::Urpmex;
 
+use Moose;
+
 
 my $HFILE = undef;
 my @list = undef;
