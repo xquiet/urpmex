@@ -22,6 +22,7 @@ use diagnostics;
 use Data::Dumper;
 use lib '..';
 use urpmex::Urpmex;
+use urpmex::Shared;
 
 use QtCore4;
 use QtGui4;
@@ -32,12 +33,16 @@ use QtCore4::slots
 
 use File::Basename;
 
+use Modern::Perl;
+
 my $title;
 my $lnedtSearch;
 my $tbvPackageList;
 my $btnSearch;
 my $rdbUpdate;
 my $rdbAvailable;
+my $btnApply;
+my $btnReset;
 
 my $green = Qt::Color(100, 255, 100);
 my $gray  = Qt::Color(221, 221, 221);
@@ -53,6 +58,11 @@ sub setupGui {
 	$mainLayout->setAlignment(Qt::AlignTop());
 	$mainLayout->setContentsMargins(10,10,10,10);
 
+
+	# ------ buttons bar def and layout -------------
+	my $buttonsBar = Qt::Widget();
+	my $buttonsBarLayout = Qt::HBoxLayout();
+	$buttonsBar->setLayout($buttonsBarLayout);
 
 	# ------ command bar def and layout -------------
 	my $commandBar = Qt::Widget();
@@ -82,12 +92,20 @@ sub setupGui {
 	$optionsBarLayout->addWidget(this->{rdbUpdates});
 	$optionsBarLayout->addWidget(this->{rdbAvailable});
 
+	# ------ buttons bar ------------
+	this->{btnApply} = Qt::PushButton("Apply");
+	this->{btnReset} = Qt::PushButton("Reset");
+	$buttonsBarLayout->setAlignment(Qt::AlignRight());
+	$buttonsBarLayout->addWidget(this->{btnReset});
+	$buttonsBarLayout->addWidget(this->{btnApply});
+
 	# ------ mainlayout -------------
 	this->{tbvPackageList} = Qt::TableView();
 	setupTable();
 	$mainLayout->addWidget($commandBar);
 	$mainLayout->addWidget($optionsBar);
 	$mainLayout->addWidget(this->{tbvPackageList});
+	$mainLayout->addWidget($buttonsBar);
 
 	this->setLayout($mainLayout);
 }
@@ -102,8 +120,11 @@ sub setupTable {
 	}
 	$model->setRowCount(0);
 	$model->setColumnCount(3);
+	# status
 	$model->setHeaderData(0, Qt::Horizontal(), Qt::Variant(Qt::String("S")));
+	# group
 	$model->setHeaderData(1, Qt::Horizontal(), Qt::Variant(Qt::String("Group")));
+	# package
 	$model->setHeaderData(2, Qt::Horizontal(), Qt::Variant(Qt::String("Package")));
 	this->{tbvPackageList}->setEditTriggers(Qt::AbstractItemView::NoEditTriggers());
 	this->{tbvPackageList}->verticalHeader()->hide();
@@ -125,7 +146,11 @@ sub search_package {
 		my $row = 0;
 		my $col = 0;
 		foreach(@found){
-		$model->setItem($row,$col, Qt::StandardItem(""));
+			my $chkItem = Qt::StandardItem("");
+			# make the first column item checkable (checkbox)
+			# http://qt-project.org/doc/qt-4.8/qstandarditem.html#setCheckable
+			$chkItem->setCheckable(1);
+			$model->setItem($row,$col, $chkItem);
 			$col++;
 			$model->setItem($row,$col, Qt::StandardItem(dirname($_)));
 			$col++;
