@@ -34,6 +34,8 @@ my ($title);
 my $ledtSearch;
 my $lstviewPackages;
 
+use Modern::Perl;
+
 sub setupGui {
 	# ---------------------------------------
 	# gui setup
