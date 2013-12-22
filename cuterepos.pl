@@ -21,6 +21,9 @@ use diagnostics;
 use Curses::UI;
 use Getopt::Long;
 use urpmex::Urpmex;
+use Locale::TextDomain qw('cuterepos');
+
+use Modern::Perl;
 
 my $HFILE = undef;
 
@@ -119,13 +122,13 @@ my @activereposids = (); # active medias at start, used for "diffing"
 my $labels={};
 my $actives={};
 
-for(keys %$repos){
-	$labels->{$_} = $repos->{$_};
+for my $repo_key (keys %$repos){
+	$labels->{$repo_key} = $repos->{$repo_key};
 	for my $item (@activerepos){
-		if($labels->{$_} eq $item){
+		if($labels->{$repo_key} eq $item){
 			# http://search.cpan.org/~marcus/Curses-UI-0.95/lib/Curses/UI/Listbox.pm#WIDGET-SPECIFIC_OPTIONS
-			$actives->{$_} = 1;
-			push(@activereposids,$_);
+			$actives->{$repo_key} = 1;
+			push(@activereposids,$repo_key);
 			last;
 		}
 	}
