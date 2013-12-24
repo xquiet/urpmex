@@ -23,6 +23,7 @@ use Data::Dumper;
 use lib '..';
 use urpmex::Urpmex;
 use urpmex::Shared;
+use List::MoreUtils qw { indexes any };
 
 use QtCore4;
 use QtGui4;
@@ -46,7 +47,9 @@ my $rdbAvailable;
 my $btnApply;
 my $btnReset;
 
-my @items;
+my @installed_pkgs;
+my @pkgs_toinstall;
+my @pkgs_toremove;
 
 my $green = Qt::Color(100, 255, 100);
 my $gray  = Qt::Color(221, 221, 221);
@@ -147,8 +150,7 @@ sub search_package {
 
 	if(this->{rdbAvailable}->isChecked()){
 		my @list_pkgs = retrieve_available_packages_release($WITH_GROUP);
-		my @installed_pkgs = urpmex::Urpmex::retrieve_installed_packages();
-		print "installed pkgs count: " . scalar(@installed_pkgs)."\n";
+		@installed_pkgs = urpmex::Urpmex::retrieve_installed_packages();
 		my $filter = this->{lnedtSearch}->text();
 		my @found = grep { $_ =~ /${filter}/ } @list_pkgs;
 		$model->setRowCount(scalar(@found));
@@ -179,17 +181,66 @@ sub search_package {
 	this->{btnSearch}->setEnabled(1);
 }
 
+sub confirmPkgsToInstall {
+	my @pkgs = @_;
+	if(scalar(@pkgs)<1)
+	{
+		return ();
+	}
+	if(scalar(@installed_pkgs)<1){
+		@installed_pkgs = urpmex::Urpmex::retrieve_installed_packages();
+	}
+	for my $pkg(@pkgs){
+		if( grep { $_ eq basename($pkg) } @installed_pkgs ){
+			my @indexes = List::MoreUtils::indexes { $_ eq basename($pkg) } @pkgs;
+			for my $index(@indexes){
+				splice @pkgs, $index;
+			}
+		}
+	}
+	return @pkgs;
+}
+
+sub confirmPkgsToRemove {
+	my @pkgs = @_;
+	if(scalar(@pkgs)<=0)
+	{
+		return ();
+	}
+	if(scalar(@installed_pkgs)<1){
+		@installed_pkgs = urpmex::Urpmex::retrieve_installed_packages();
+	}
+	for my $pkg(@pkgs){
+		my $exists = any { $_ eq basename($pkg) } @installed_pkgs;
+		if( not $exists ){
+			my @indexes = List::MoreUtils::indexes { $_ eq basename($pkg) } @pkgs;
+			for my $index(@indexes){
+				splice @pkgs, $index;
+			}
+		}
+	}
+	return @pkgs;
+}
+
 sub install_selection {
 	this->{btnApply}->setEnabled(0);
 	my $model = this->{tbvPackageList}->model();
+	@pkgs_toinstall = ();
+	@pkgs_toremove = ();
 	if($model->rowCount()>0){
 		for(my $i=0;$i<$model->rowCount();$i++){
 			if($model->item($i,0)->checkState == Qt::Checked()){
 				print "item $i is checked\n";
+				push @pkgs_toinstall, $model->item($i,2)->text();
 			}else{
 				print "item $i is unchecked\n";
+				push @pkgs_toremove, $model->item($i,2)->text();
 			}
 		}
+		@pkgs_toinstall = confirmPkgsToInstall(@pkgs_toinstall);
+		@pkgs_toremove = confirmPkgsToRemove(@pkgs_toremove);
+		print "== to install @pkgs_toinstall\n";
+		print "== to remove @pkgs_toremove\n";
 	}
 	this->{btnApply}->setEnabled(1);
 }
