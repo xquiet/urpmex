@@ -29,6 +29,8 @@ use QtGui4;
 use QtCore4::debug qw( ambiguous );
 use QtCore4::isa qw( Qt::Widget );
 use QtCore4::slots
+    setupTable => [],
+    install_selection => [],
     search_package => [];
 
 use File::Basename;
@@ -43,6 +45,8 @@ my $rdbUpdate;
 my $rdbAvailable;
 my $btnApply;
 my $btnReset;
+
+my @items;
 
 my $green = Qt::Color(100, 255, 100);
 my $gray  = Qt::Color(221, 221, 221);
@@ -99,6 +103,9 @@ sub setupGui {
 	$buttonsBarLayout->addWidget(this->{btnReset});
 	$buttonsBarLayout->addWidget(this->{btnApply});
 
+	this->connect(this->{btnApply}, SIGNAL 'clicked()', this, SLOT 'install_selection()');
+	this->connect(this->{btnReset}, SIGNAL 'clicked()', this, SLOT 'setupTable()');
+
 	# ------ mainlayout -------------
 	this->{tbvPackageList} = Qt::TableView();
 	setupTable();
@@ -128,8 +135,8 @@ sub setupTable {
 	$model->setHeaderData(2, Qt::Horizontal(), Qt::Variant(Qt::String("Package")));
 	this->{tbvPackageList}->setEditTriggers(Qt::AbstractItemView::NoEditTriggers());
 	this->{tbvPackageList}->verticalHeader()->hide();
-	this->{tbvPackageList}->setColumnWidth(0,20);
-	this->{tbvPackageList}->setColumnWidth(1,110);
+	this->{tbvPackageList}->setColumnWidth(0,30);
+	this->{tbvPackageList}->setColumnWidth(1,120);
 	this->{tbvPackageList}->setColumnWidth(2,this->{tbvPackageList}->width()-130-10);
 }
 
@@ -140,21 +147,27 @@ sub search_package {
 
 	if(this->{rdbAvailable}->isChecked()){
 		my @list_pkgs = retrieve_available_packages_release($WITH_GROUP);
+		my @installed_pkgs = urpmex::Urpmex::retrieve_installed_packages();
+		print "installed pkgs count: " . scalar(@installed_pkgs)."\n";
 		my $filter = this->{lnedtSearch}->text();
 		my @found = grep { $_ =~ /${filter}/ } @list_pkgs;
 		$model->setRowCount(scalar(@found));
 		my $row = 0;
 		my $col = 0;
-		foreach(@found){
+		foreach my $pkg (@found){
 			my $chkItem = Qt::StandardItem("");
 			# make the first column item checkable (checkbox)
 			# http://qt-project.org/doc/qt-4.8/qstandarditem.html#setCheckable
 			$chkItem->setCheckable(1);
+			my @tmp = grep { $_ eq basename($pkg) } @installed_pkgs;
+			if(scalar (@tmp) > 0){
+				$chkItem->setCheckState(Qt::Checked());
+			}
 			$model->setItem($row,$col, $chkItem);
 			$col++;
-			$model->setItem($row,$col, Qt::StandardItem(dirname($_)));
+			$model->setItem($row,$col, Qt::StandardItem(dirname($pkg)));
 			$col++;
-			$model->setItem($row,$col, Qt::StandardItem(basename($_)));
+			$model->setItem($row,$col, Qt::StandardItem(basename($pkg)));
 			$row++;
 			$col = 0;
 		}
@@ -164,6 +177,21 @@ sub search_package {
 		Qt::MessageBox::warning(this,"Warning", "No options selected") ;
 	}
 	this->{btnSearch}->setEnabled(1);
+}
+
+sub install_selection {
+	this->{btnApply}->setEnabled(0);
+	my $model = this->{tbvPackageList}->model();
+	if($model->rowCount()>0){
+		for(my $i=0;$i<$model->rowCount();$i++){
+			if($model->item($i,0)->checkState == Qt::Checked()){
+				print "item $i is checked\n";
+			}else{
+				print "item $i is unchecked\n";
+			}
+		}
+	}
+	this->{btnApply}->setEnabled(1);
 }
 
 sub showWindow {
