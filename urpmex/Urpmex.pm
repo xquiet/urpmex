@@ -59,7 +59,7 @@ sub newer {
 	my $installed = shift();
 	my $possible = shift();
 	# return 0 before comparing_packages if package names are identical
-	my $result = compare_packages($installed,$possible);
+	my $result = urpmex::RPM::compare_packages($installed,$possible);
 	return 0 if($result == 1);
 	return 1 if($result == -1);
 }
@@ -72,12 +72,12 @@ sub check_for_updates {
 	my $installedPkgs = shift();
 	my @update_candidate = ();
 	for my $installed (@$installedPkgs){
-		my $i_name = rpm_name($installed, 1);
+		my $i_name = urpmex::RPM::rpm_name($installed, 1);
 		print "Remaining: ".scalar(@$possibleUpdates)."\n";
 		last if(scalar(@$possibleUpdates)<=0);
 		my @matching = grep { $_ =~ /${i_name}/ } @$possibleUpdates;
 		next if(scalar(@matching)<=0);
-		my $possible = first { rpm_name($_,0) eq $i_name } @matching; 
+		my $possible = first { urpmex::RPM::rpm_name($_,0) eq $i_name } @matching; 
 		#if(!defined($possible) || ($possible eq "")){
 		#	for(@matching){
 		#		splice(@$possibleUpdates, indexArray($_,@$possibleUpdates), 1);
@@ -86,7 +86,7 @@ sub check_for_updates {
 		#}
 		next if(!defined($possible) || ($possible eq ""));
 		splice(@$possibleUpdates, indexArray($possible,@$possibleUpdates), 1);
-		my $p_name = rpm_name($possible,0);
+		my $p_name = urpmex::RPM::rpm_name($possible,0);
 		next if($p_name eq "");
 		if(newer($i_name,$p_name)){
 			print ">>> PUSHED <<<\n";
