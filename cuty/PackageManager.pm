@@ -19,6 +19,7 @@ package PackageManager;
 use strict;
 use warnings;
 use diagnostics;
+use Modern::Perl;
 use Data::Dumper;
 use lib '..';
 use urpmex::Urpmex;
@@ -36,7 +37,6 @@ use QtCore4::slots
 
 use File::Basename;
 
-use Modern::Perl;
 
 my $title;
 my $lnedtSearch;
