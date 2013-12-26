@@ -23,22 +23,22 @@ use base qw(Exporter);
 use strict;
 use warnings;
 use diagnostics;
+use Modern::Perl;
 use urpmex::Shared;
 use urpmex::RPM;
 use POSIX;
 
-use Modern::Perl;
 
 use urpm;
 use urpm::cfg;
 use urpm::media;
 
-our @EXPORT = qw(
-		list_available_media
-        list_active_media
-        _dbg_show_config
-        _dbg_media_read_config
-     	     );
+#our @EXPORT = qw(
+#		list_available_media
+#        list_active_media
+#        _dbg_show_config
+#        _dbg_media_read_config
+#     	     );
 
 
 ####################################################
