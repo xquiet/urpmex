@@ -8,12 +8,12 @@ use base qw(Exporter);
 use urpmex::Shared;
 use RPM4;
 
-our @EXPORT = qw(compare_packages
-		rpm_name
-		rpm_version
-		rpm_release
-		rpm_epoch
-		rpm_fullname);
+#our @EXPORT = qw(compare_packages
+#		rpm_name
+#		rpm_version
+#		rpm_release
+#		rpm_epoch
+#		rpm_fullname);
 
 sub compare_packages {
 	my $a = shift();
