@@ -16,6 +16,7 @@
 
 use strict;
 use warnings;
+use Modern::Perl;
 use QtCore4;
 use QtGui4;
 use MainWindow;
