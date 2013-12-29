@@ -19,7 +19,6 @@ package Repositories;
 use strict;
 use warnings;
 use diagnostics;
-use Data::Dumper;
 use lib '..';
 use urpmex::Urpmex;
 
