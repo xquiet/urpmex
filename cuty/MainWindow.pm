@@ -19,9 +19,9 @@ package MainWindow;
 use strict;
 use warnings;
 use diagnostics;
-use Data::Dumper;
 use Repositories;
 use PackageManager;
+use About;
 
 use QtCore4;
 use QtGui4;
@@ -55,6 +55,13 @@ sub setupGui {
 
 	this->{wdgRepositories} = Repositories(this->{title}." - [Repositories]");
 	this->{wdgPackageManager} = PackageManager(this->{title}." - [Package Manager]");
+	this->{wdgAbout} = About(this->{title}." - [About]",
+				"cuty",
+				"0.2",
+				"&copy; 2012-2013 by Matteo Pasotti<br />".
+				"This is free software GPLv3 licensed",
+				"https://github.com/xquiet/urpmex"
+				);
 
 	setupTabs();
 }
@@ -63,6 +70,7 @@ sub setupTabs {
 	this->{tab}->setTabPosition(Qt::TabWidget::West());
 	this->{tab}->addTab(this->{wdgPackageManager}, "Packages");
 	this->{tab}->addTab(this->{wdgRepositories}, "Repositories");
+	this->{tab}->addTab(this->{wdgAbout}, "About");
 }
 sub showWindow {
 	this->setVisible(1);
