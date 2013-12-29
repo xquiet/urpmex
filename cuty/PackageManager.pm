@@ -24,7 +24,7 @@ use Data::Dumper;
 use lib '..';
 use urpmex::Urpmex;
 use urpmex::Shared;
-use List::MoreUtils qw { indexes any };
+use List::MoreUtils qw { indexes any zip };
 
 use QtCore4;
 use QtGui4;
@@ -94,6 +94,7 @@ sub setupGui {
 	# ------ options bar -------------
 	this->{rdbUpdates} = Qt::RadioButton("Updates");
 	this->{rdbAvailable} = Qt::RadioButton("Available");
+	this->{rdbAvailable}->setChecked(1);
 	$optionsBarLayout->setAlignment(Qt::AlignLeft());
 	$optionsBarLayout->addWidget(this->{lblOperations});
 	$optionsBarLayout->addWidget(this->{rdbUpdates});
@@ -102,7 +103,10 @@ sub setupGui {
 	# ------ buttons bar ------------
 	this->{btnApply} = Qt::PushButton("Apply");
 	this->{btnReset} = Qt::PushButton("Reset");
+	this->{ckbAutoDeps} = Qt::CheckBox("Auto resolve deps");
+	this->{ckbAutoDeps}->setChecked(1);
 	$buttonsBarLayout->setAlignment(Qt::AlignRight());
+	$buttonsBarLayout->addWidget(this->{ckbAutoDeps});
 	$buttonsBarLayout->addWidget(this->{btnReset});
 	$buttonsBarLayout->addWidget(this->{btnApply});
 
@@ -239,8 +243,55 @@ sub install_selection {
 		}
 		@pkgs_toinstall = confirmPkgsToInstall(@pkgs_toinstall);
 		@pkgs_toremove = confirmPkgsToRemove(@pkgs_toremove);
+
+		# NOTE: put outside the loop to avoid infinite loop
+		# NOTE: deps_toinstall will include the name of the pkg to install
+		my @deps_toinstall = ();
+		foreach my $pkgname(@pkgs_toinstall){
+			my @required_pkgs = find_required($pkgname);
+			print "== required pkgs @required_pkgs\n";
+			if(scalar(@required_pkgs)>0){
+				if(scalar(@deps_toinstall)>0){
+					@deps_toinstall = zip(@deps_toinstall, @required_pkgs);
+				}else{
+					@deps_toinstall = @required_pkgs;
+				}
+			}
+		}
 		print "== to install @pkgs_toinstall\n";
-		print "== to remove @pkgs_toremove\n";
+		print "== deps @deps_toinstall\n";
+		if(scalar(@deps_toinstall)>0){
+			my $dep_list="@deps_toinstall";
+			$dep_list =~s/\s/\n\- /g;
+			$dep_list = "- ".$dep_list;
+			if(Qt::MessageBox::information(this,
+							"Dependencies",
+							"The following dependencies are required\n".
+							"Do you want to install them all?\n$dep_list",
+							Qt::MessageBox::Yes()|Qt::MessageBox::No(),
+							Qt::MessageBox::No())
+						== Qt::MessageBox::No()){
+				print "== installation aborted\n";
+			}else{
+				@pkgs_toinstall = @deps_toinstall;
+				print "== to install @pkgs_toinstall\n";
+				print "== to remove @pkgs_toremove\n";
+				if(this->{ckbAutoDeps}->isChecked()){
+					if(urpmex::Urpmex::install_pkgs($INSTALLER_AUTORESOLVEDEPS,@pkgs_toinstall)){
+						Qt::MessageBox::information(this,"Done","Installation completed successfully");
+					}else{
+						Qt::MessageBox::critical(this,"Finished","Something went wrong during the installation process");
+					}
+				}else{
+					if(urpmex::Urpmex::install_pkgs($INSTALLER_MANUALLYRESOLVEDEPS,@pkgs_toinstall)){
+						Qt::MessageBox::information(this,"Done","Installation completed successfully");
+					}else{
+						Qt::MessageBox::critical(this,"Finished","Something went wrong during the installation process");
+					}
+				}
+				@installed_pkgs = urpmex::Urpmex::retrieve_installed_packages();
+			}
+		}
 	}
 	this->{btnApply}->setEnabled(1);
 }
@@ -263,6 +314,9 @@ sub NEW {
 	my ($class, $title) = @_;
 	$class->SUPER::NEW();
 	this->{title} = $title;
+	if(not check_privileges()){
+		Qt::MessageBox::warning(this,"Warning", "To install packages the application must be run as root") ;
+	}
 	this->setupGui();
 	return this;
 }
