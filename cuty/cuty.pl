@@ -20,7 +20,6 @@ use Modern::Perl;
 use QtCore4;
 use QtGui4;
 use MainWindow;
-use Repositories;
 
 sub main
 {
