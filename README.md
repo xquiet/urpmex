@@ -11,7 +11,7 @@ Currently it provides three scripts:
  * kir
  * urpm-downloader
 
-There are other (graphical) tools still under development, you can find them into the *cuty* directory
+There are other (graphical, thanks to Qt4) tools still under development, you can find them into the *cuty* directory
  * Repositories
  * PackageManager
 
