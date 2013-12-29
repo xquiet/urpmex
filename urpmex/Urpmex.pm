@@ -44,6 +44,7 @@ our @EXPORT = qw(retrieve_available_updates
              add_medias 
              remove_medias 
              update_repos
+	     find_required
 	     find_medias_to_enable
 	     find_medias_to_disable
 	     r_strip_occurrences
@@ -98,16 +99,64 @@ sub check_for_updates {
 }
 
 # ----------------------------------------------------------------------
+# install requested packages - bool
+# ----------------------------------------------------------------------
+sub install_pkgs {
+	my $resolvedep = shift();
+	my @pkgs = @_;
+	my $command = $PKG_INSTALLER;
+	my @args;
+	if($resolvedep eq $INSTALLER_AUTORESOLVEDEPS){
+		# automatically resolves dependencies
+		print "== auto resolve deps\n";
+		push @args, $INSTALLER_AUTO;
+	        push @args, $INSTALLER_FORCE;
+	}elsif($resolvedep eq $INSTALLER_MANUALLYRESOLVEDEPS){
+		# WARN: auto-orphans will not work
+		print "== manually resolve deps\n";
+		push @args, $INSTALLER_FORCE;
+	}
+	push @args, join(" ",@pkgs);
+	$command = $command." ".join(" ",@args)."\n";
+	if(check_privileges()){
+		print "== running installation command\n$command\n";
+		`$command`;
+		return 1;
+	}
+	return 0;
+}
+
+# ----------------------------------------------------------------------
+# find required packages - array
+# ----------------------------------------------------------------------
+sub wrap_find_required {
+	my $pkg = shift();
+	my $command = "$PKG_QUERYMAKER";
+	my @args;
+	push @args, $QUERY_PKG_FULL;
+	push @args, $QUERY_PKG_DEPENDENCIES;
+	push @args, $pkg;
+	$command = $command . " " . join(" ", @args);
+	return $command;
+}
+
+sub find_required {
+	my $pkgname = shift();
+	my $command = wrap_find_required($pkgname);
+	my @list = `$command`;
+	chomp(@list);
+	return @list;
+}
+
+# ----------------------------------------------------------------------
 # find available updates - array
 # ----------------------------------------------------------------------
 sub retrieve_available_updates {
-	use Data::Dumper;
 	my @available_updates = retrieve_available_packages_release($WITHOUT_GROUP,$UPDATES_ONLY);
 	my @installed = retrieve_installed_packages($RPM_QUERY_NAMEONLY);
 	#my @intermediate = enumerate_similar_items(\@installed, \@available_updates);
 	#my @installed_full = retrieve_installed_packages($RPM_QUERY_NAME_VERSION_RELEASE);
 	my @updates = check_for_updates(\@available_updates, \@installed);
-	print Dumper(@updates);
 	return @updates;
 }
 
