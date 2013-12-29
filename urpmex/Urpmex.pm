@@ -119,7 +119,6 @@ sub install_pkgs {
 	push @args, join(" ",@pkgs);
 	$command = $command." ".join(" ",@args)."\n";
 	if(check_privileges()){
-		print "== running installation command\n$command\n";
 		`$command`;
 		return 1;
 	}

@@ -234,10 +234,10 @@ sub install_selection {
 	if($model->rowCount()>0){
 		for(my $i=0;$i<$model->rowCount();$i++){
 			if($model->item($i,0)->checkState == Qt::Checked()){
-				print "item $i is checked\n";
+				# checked
 				push @pkgs_toinstall, $model->item($i,2)->text();
 			}else{
-				print "item $i is unchecked\n";
+				# unchecked
 				push @pkgs_toremove, $model->item($i,2)->text();
 			}
 		}
@@ -258,7 +258,6 @@ sub install_selection {
 				}
 			}
 		}
-		print "== to install @pkgs_toinstall\n";
 		print "== deps @deps_toinstall\n";
 		if(scalar(@deps_toinstall)>0){
 			my $dep_list="@deps_toinstall";
