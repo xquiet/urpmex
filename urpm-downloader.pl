@@ -27,6 +27,7 @@ my $QUERY_LISTURL_PARM = "--list-url";
 my $QUERY_LOOKFORSRPM_PARM = "--sourcerpm";
 my $DLDER = "--wget";
 my $use_wget = 0; # false
+my $use_axel = 0; # false
 my $dl_srpm = 0; # false
 my $use_major = 0; # false
 my @pacchetti;
@@ -39,6 +40,7 @@ sub process_args {
 }
 
 my $result = GetOptions ("wget" => \$use_wget, 
+			 "axel" => \$use_axel,
 			 "source" => \$dl_srpm, 
 		 	 '<>' => \&process_args,
 	 		 "major" => \$use_major); 
@@ -109,6 +111,8 @@ sub download {
 	my $rpm = shift();
 	if($use_wget){
 		`wget "$url/$rpm" -O $rpm`;
+	}elsif($use_axel){
+		`axel -a "$url/$rpm" -o $rpm`;
 	}else{
 		`curl -s "$url/$rpm" -o $rpm`;
 	}
